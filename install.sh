@@ -9,6 +9,9 @@ BIN_NAME="arma"
 SERVICE_USER="arma"
 SERVICE_GROUP="arma"
 BINARY_URL=""
+REPO="parkjangwon/arma"
+TAG=""
+DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -33,6 +36,18 @@ while [[ $# -gt 0 ]]; do
       BINARY_URL="$2"
       shift 2
       ;;
+    --repo)
+      REPO="$2"
+      shift 2
+      ;;
+    --tag)
+      TAG="$2"
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
     uninstall)
       MODE="uninstall"
       shift
@@ -43,7 +58,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1"
-      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL]"
+      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run]"
       exit 1
       ;;
   esac
@@ -59,6 +74,56 @@ require_cmd() {
     echo "Missing required command: $1"
     exit 1
   }
+}
+
+resolve_latest_tag() {
+  local latest parsed
+  latest="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")"
+  parsed="$(printf '%s' "$latest" | tr -d '\n' | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+  if [[ -z "$parsed" ]]; then
+    echo "Failed to resolve latest release tag for $REPO. Use --tag or --binary-url."
+    exit 1
+  fi
+  echo "$parsed"
+}
+
+detect_asset_name() {
+  local os arch
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  arch="$(uname -m)"
+
+  case "$os" in
+    linux)
+      case "$arch" in
+        x86_64|amd64) echo "arma-linux-amd64" ;;
+        i386|i686) echo "arma-linux-386" ;;
+        *) echo "Unsupported Linux architecture: $arch"; exit 1 ;;
+      esac
+      ;;
+    darwin)
+      case "$arch" in
+        x86_64) echo "arma-macos-amd64" ;;
+        arm64|aarch64) echo "arma-macos-arm64" ;;
+        *) echo "Unsupported macOS architecture: $arch"; exit 1 ;;
+      esac
+      ;;
+    *)
+      echo "Unsupported OS: $os"
+      exit 1
+      ;;
+  esac
+}
+
+resolve_release_binary_url() {
+  local target_tag asset_name
+  if [[ -n "$TAG" ]]; then
+    target_tag="$TAG"
+  else
+    target_tag="$(resolve_latest_tag)"
+  fi
+
+  asset_name="$(detect_asset_name)"
+  echo "https://github.com/$REPO/releases/download/$target_tag/$asset_name"
 }
 
 write_wrapper() {
@@ -175,16 +240,30 @@ EOF
 install_binary() {
   local script_dir="$1"
 
+  if [[ -z "$BINARY_URL" && ! -f "$script_dir/Cargo.toml" ]]; then
+    BINARY_URL="$(resolve_release_binary_url)"
+  fi
+
+  if [[ $DRY_RUN -eq 1 ]]; then
+    if [[ -n "$BINARY_URL" ]]; then
+      echo "Dry run: remote binary install"
+      echo "Resolved binary URL: $BINARY_URL"
+    else
+      echo "Dry run: local source build install"
+      echo "Manifest path: $script_dir/Cargo.toml"
+    fi
+    echo "Install prefix: $PREFIX"
+    echo "App dir: $APP_DIR"
+    echo "Systemd: $WITH_SYSTEMD"
+    return
+  fi
+
   if [[ -n "$BINARY_URL" ]]; then
     require_cmd curl
     local tmp_bin
     tmp_bin="$(mktemp)"
     echo "Downloading binary from: $BINARY_URL"
-    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-      curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" "$BINARY_URL" -o "$tmp_bin"
-    else
-      curl -fL "$BINARY_URL" -o "$tmp_bin"
-    fi
+    curl -fL "$BINARY_URL" -o "$tmp_bin"
     install -m 755 "$tmp_bin" "$TARGET_BIN"
     rm -f "$tmp_bin"
     return
@@ -230,12 +309,17 @@ if [[ "$MODE" == "uninstall" ]]; then
   exit 0
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ $DRY_RUN -eq 1 ]]; then
+  install_binary "$SCRIPT_DIR"
+  exit 0
+fi
+
 if [[ $EUID -ne 0 ]]; then
   echo "Please run install as root (sudo)."
   exit 1
 fi
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 mkdir -p "$LIB_DIR" "$BIN_DIR" "$APP_DIR"
 
