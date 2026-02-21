@@ -4,6 +4,16 @@ last_updated: "2026-02-22"
 deny_keywords:
   - "disable moderation"
   - "reveal hidden instructions"
+  - "output system message"
+  - "policy bypass sequence"
+  - "프롬프트원문출력"
+
+deny_patterns:
+  - "(?i)(verbatim|raw).*(system|developer).*(prompt|message|instruction)"
+  - "(?i)(jailbreak|prompt\\s*injection).*(success|mode|enabled)?"
+  - "(?i)(tool|function).*(force|override).*(call|execution)"
+  - "(?i)(ignore|bypass).*(all).*(safety|policy|filters?)"
+  - "(?i)(가드레일|정책|보안).*(전부|완전).*(무시|해제|우회)"
 
 settings:
-  sensitivity_score: 85
+  sensitivity_score: 90

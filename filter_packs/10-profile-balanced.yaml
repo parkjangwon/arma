@@ -1,5 +1,14 @@
 version: "1.1.2-balanced"
 last_updated: "2026-02-22"
 
+deny_keywords:
+  - "ignore safety policy"
+  - "reveal policy text"
+  - "내부정책공개"
+
+deny_patterns:
+  - "(?i)(ignore|bypass).*(safety|policy|guardrails)"
+  - "(?i)(reveal|print|show).*(policy|instruction).*(verbatim|full)"
+
 settings:
-  sensitivity_score: 75
+  sensitivity_score: 84

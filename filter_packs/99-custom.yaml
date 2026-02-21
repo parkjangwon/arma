@@ -1,9 +1,13 @@
-version: "1.0.0-custom"
+version: "1.1.2-custom"
 last_updated: "2026-02-22"
 
-allow_keywords:
-  - "internal-approved-test"
-  - "customer-whitelist-dummy"
+# Keep custom pack conservative by default.
+# Add organization-specific allow/deny rules explicitly when needed.
+allow_keywords: []
+
+deny_keywords:
+  - "bypass arma"
+  - "arma 우회"
 
 settings:
-  sensitivity_score: 75
+  sensitivity_score: 84
