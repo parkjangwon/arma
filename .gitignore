@@ -2,3 +2,22 @@
 /.arma.pid
 *.log
 ARMA_STRESS_TEST_REPORT_*.md
+
+# Logs
+/logs/
+
+# Environment files
+.env
+.env.*
+
+# Editor and IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+
+# Temporary files
+*.tmp
+*.swp
+*~
