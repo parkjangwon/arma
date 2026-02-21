@@ -1,0 +1,9 @@
+version: "1.0.0-custom"
+last_updated: "2026-02-22"
+
+allow_keywords:
+  - "internal-approved-test"
+  - "customer-whitelist-dummy"
+
+settings:
+  sensitivity_score: 75

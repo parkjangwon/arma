@@ -1,0 +1,4 @@
+/target/
+/.arma.pid
+*.log
+ARMA_STRESS_TEST_REPORT_*.md

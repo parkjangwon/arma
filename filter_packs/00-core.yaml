@@ -1,0 +1,17 @@
+version: "1.0.0-core"
+last_updated: "2026-02-22"
+
+deny_keywords:
+  - "ignore"
+  - "ignore previous instructions"
+  - "system prompt"
+  - "developer message"
+  - "시스템"
+  - "무시"
+
+deny_patterns:
+  - "(?i)ignore\\s+all\\s+previous\\s+instructions"
+  - "(?i)reveal\\s+.*\\s+prompt"
+
+settings:
+  sensitivity_score: 70
