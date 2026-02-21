@@ -1,5 +1,7 @@
 # ARMA
 
+<img width="3168" height="1344" alt="Gemini_Generated_Image_mmhfb6mmhfb6mmhf" src="https://github.com/user-attachments/assets/072fd5f7-a867-4091-87b3-bd5774f46608" />
+
 Ultra-high-performance AI prompt guardrail engine built in Rust.
 
 ARMA is a lightweight security gateway that validates prompts before they reach your LLM, blocking prompt-injection and evasion patterns with low latency.
