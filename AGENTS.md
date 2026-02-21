@@ -26,6 +26,12 @@
   1) high QPS traffic spikes,
   2) live rule changes during active traffic.
 
+## Explicit Non-Goals (Keep It Lightweight)
+- No multi-tenant architecture.
+- No advanced web dashboard product surface.
+- No heavyweight external observability stack as a hard dependency.
+- No feature creep beyond pre-LLM validation + minimal operational visibility.
+
 ## Architecture Intent (Do Not Break)
 1. **Directory-based rule loading**
    - ARMA loads `filter_packs/*.yaml|*.yml` and merges by filename ascending order.
@@ -41,9 +47,9 @@
 
 3. **Engine execution order (security contract)**
    - Normalize input.
-   - Apply allow-list bypass check.
    - Run deny keyword scan (Aho-Corasick).
    - Run deny regex checks.
+   - Apply allow-list bypass check last.
    - Keep this order unless security policy explicitly changes.
 
 4. **Runtime resilience**
