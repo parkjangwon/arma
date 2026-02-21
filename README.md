@@ -1,5 +1,7 @@
 # ARMA
 
+<img width="3168" height="1344" alt="Gemini_Generated_Image_mmhfb6mmhfb6mmhf" src="https://github.com/user-attachments/assets/b23fd262-78fd-4bba-8451-d99fdb19f887" />
+
 초고성능 AI 프롬프트 가드레일 엔진 (Rust).
 
 ARMA는 LLM 호출 이전 단계에서 입력 프롬프트를 고속 검사해 우회 공격을 차단하는 경량 보안 게이트입니다.
