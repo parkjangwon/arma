@@ -34,6 +34,20 @@ curl -fsSL <INSTALL_SCRIPT_URL> | sudo bash -s -- --binary-url <DIRECT_BINARY_UR
 
 `--binary-url`이 없으면 로컬 소스(`Cargo.toml`) 기준 빌드 설치를 시도합니다.
 
+GitHub 릴리즈 기반 원라인 설치(`install.sh`)도 지원합니다.
+
+- 예시:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
+```
+
+- 설치 전 드라이런:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --dry-run --with-systemd
+```
+
 - 설치 결과
   - 바이너리: `/usr/local/lib/arma/arma`
   - 전역 명령어 래퍼: `/usr/local/bin/arma`

@@ -26,6 +26,26 @@ sudo ./install.sh --with-systemd
 
 The script reads `Cargo.toml`, `config.yaml`, and `filter_packs/` from the source tree to build and install ARMA.
 
+If you need one-line installation without local source tree (for production servers), use release binary mode.
+
+```bash
+curl -fsSL <INSTALL_SCRIPT_URL> | sudo bash -s -- --binary-url <DIRECT_BINARY_URL> --with-systemd
+```
+
+`install.sh` also supports GitHub release-based one-line installation.
+
+- Example:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
+```
+
+- Dry run before install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --dry-run --with-systemd
+```
+
 - Installation outputs
   - binary: `/usr/local/lib/arma/arma`
   - global wrapper command: `/usr/local/bin/arma`
