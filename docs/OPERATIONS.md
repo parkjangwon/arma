@@ -30,8 +30,29 @@ sudo install -m 755 target/release/arma /usr/local/bin/arma
 - `config.yaml`
 - `filter_packs/00-core.yaml`
 - `filter_packs/99-custom.yaml`
+- `filter_packs/10-profile-balanced.yaml` 또는 `filter_packs/10-profile-strict.yaml`
 
-### 2.4 기동/중지/리로드
+### 2.4 필터팩 프로파일 선택 가이드
+
+`config.yaml`에서 아래처럼 `filter_pack.profile`을 지정합니다.
+
+```yaml
+filter_pack:
+  dir: ./filter_packs
+  profile: balanced # balanced | strict
+```
+
+프로파일 동작 규칙:
+- `*-profile-<name>.yaml` 파일은 `profile` 값과 일치할 때만 병합됩니다.
+- 예: `profile: strict`이면 `10-profile-strict.yaml`만 적용됩니다.
+- `00-core.yaml`, `99-custom.yaml` 같은 공통 파일은 항상 병합됩니다.
+
+운영 전환 절차(권장):
+1) `config.yaml`의 `filter_pack.profile` 값을 변경
+2) `arma reload` 실행 (또는 SIGHUP)
+3) `curl -s http://127.0.0.1:8080/health`로 `filter_pack_version` 확인
+
+### 2.5 기동/중지/리로드
 
 ```bash
 arma start
@@ -39,7 +60,7 @@ arma reload
 arma stop
 ```
 
-### 2.5 운영 점검
+### 2.6 운영 점검
 
 ```bash
 curl -s http://127.0.0.1:8080/health
