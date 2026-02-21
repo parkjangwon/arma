@@ -25,10 +25,7 @@ jobs:
             target: i686-unknown-linux-gnu
             asset_name: arma-linux-386
             install_deps: sudo apt-get update && sudo apt-get install -y gcc-multilib
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            asset_name: arma-windows-amd64.exe
-            install_deps: ""
+          # windows target disabled: daemonize crate is unix-only
           - os: macos-13
             target: x86_64-apple-darwin
             asset_name: arma-macos-amd64
