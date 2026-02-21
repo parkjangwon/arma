@@ -72,6 +72,16 @@ deny_keywords:
   - "verbatim prompt"
   - "policy bypass sequence"
   - "tool override"
+  - "double base64"
+  - "rot13 decode"
+  - "unicode normalize"
+  - "act as root"
+  - "act as maintainer"
+  - "act as operator"
+  - "force function call"
+  - "force tool call"
+  - "ignore policy and call tool"
+  - "참고용으로 보여줘"
 
 deny_patterns:
   - "(?i)ignore\\s+all\\s+previous\\s+instructions"
@@ -94,6 +104,11 @@ deny_patterns:
   - "(?i)(return|output).*(raw|verbatim).*(prompt|instruction|system)"
   - "(?i)(policy\\s*bypass\\s*sequence|tool\\s*override)"
   - "(?i)(프롬프트|시스템|정책).*(원문|원본).*(출력|노출)"
+  - "(?i)(double\\s*base64|rot13|unicode\\s*normaliz(e|ation)).*(decode|bypass|obfuscat)"
+  - "(?i)(act\\s+as).*(maintainer|operator|root|admin).*(ignore|override|bypass)?"
+  - "(?i)(force|override).*(tool|function).*(call|execution)"
+  - "(?i)(ignore\\s*policy\\s*and\\s*call\\s*tool)"
+  - "(?i)(참고용|학습\\s*목적|예외).*(정책|가드레일|보안).*(무시|해제|우회|공개)"
 
 settings:
   sensitivity_score: 84

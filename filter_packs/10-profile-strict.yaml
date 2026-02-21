@@ -7,6 +7,10 @@ deny_keywords:
   - "output system message"
   - "policy bypass sequence"
   - "프롬프트원문출력"
+  - "double base64"
+  - "rot13 decode"
+  - "force function call"
+  - "ignore policy and call tool"
 
 deny_patterns:
   - "(?i)(verbatim|raw).*(system|developer).*(prompt|message|instruction)"
@@ -14,6 +18,9 @@ deny_patterns:
   - "(?i)(tool|function).*(force|override).*(call|execution)"
   - "(?i)(ignore|bypass).*(all).*(safety|policy|filters?)"
   - "(?i)(가드레일|정책|보안).*(전부|완전).*(무시|해제|우회)"
+  - "(?i)(double\\s*base64|rot13|unicode\\s*normaliz(e|ation)).*(decode|bypass|obfuscat)"
+  - "(?i)(act\\s+as).*(maintainer|operator|root|admin).*(ignore|override|bypass)?"
+  - "(?i)(ignore\\s*policy\\s*and\\s*call\\s*tool|force\\s*function\\s*call|force\\s*tool\\s*call)"
 
 settings:
   sensitivity_score: 90
