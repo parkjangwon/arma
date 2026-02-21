@@ -71,6 +71,12 @@ cargo run --release -- reload
 cargo run --release -- status
 ```
 
+- Update installed runtime (requires root)
+
+```bash
+sudo arma update
+```
+
 ## 5. Build locally
 
 ```bash

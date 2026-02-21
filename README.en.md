@@ -18,7 +18,7 @@ ARMA is a lightweight security gateway that validates prompts before they reach 
 - **High-speed filtering**: Aho-Corasick + Regex multi-layer checks
 - **Normalization defense**: NFC + lowercase + whitespace/punctuation stripping
 - **Zero-downtime hot reload**: directory-based rule merge with RwLock swap
-- **Ops-ready runtime**: CLI lifecycle, JSON logging, Docker/Compose support
+- **Ops-ready runtime**: CLI lifecycle (start/stop/reload/status/update), JSON logging, Docker/Compose support
 
 ## Architecture at a glance
 
@@ -41,7 +41,15 @@ cargo run --release -- start
 docker compose up -d
 ```
 
-3) Run stress test
+3) Update installed runtime (binary + latest filter packs)
+
+```bash
+sudo arma update
+# non-interactive mode with rule overwrite
+sudo arma update --yes
+```
+
+4) Run stress test
 
 ```bash
 cargo run --release --bin stress

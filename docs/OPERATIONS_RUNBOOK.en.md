@@ -34,6 +34,10 @@ curl -fsSL <INSTALL_SCRIPT_URL> | sudo bash -s -- --binary-url <DIRECT_BINARY_UR
 
 `install.sh` also supports GitHub release-based one-line installation.
 
+Filter-pack sync options:
+- `--update-rules`: sync latest filter packs
+- `--overwrite-rules`: sync with overwrite of existing YAML files
+
 - Example:
 
 ```bash
@@ -62,6 +66,7 @@ arma stop
 arma restart
 arma reload
 arma status
+sudo arma update
 ```
 
 ### 2.2 Docker operations
@@ -100,6 +105,7 @@ logging:
 
 filter_pack:
   dir: ./filter_packs
+  profile: balanced
 ```
 
 ### 3.1 `server.host` / `server.port`

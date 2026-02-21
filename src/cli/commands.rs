@@ -23,4 +23,8 @@ pub enum Commands {
     Reload,
     Status,
     Manual,
+    Update {
+        #[arg(long = "yes", default_value_t = false)]
+        yes: bool,
+    },
 }

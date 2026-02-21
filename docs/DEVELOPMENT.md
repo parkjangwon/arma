@@ -71,6 +71,12 @@ cargo run --release -- reload
 cargo run --release -- status
 ```
 
+- 설치 환경 업데이트(루트 권한 필요)
+
+```bash
+sudo arma update
+```
+
 ## 5. 로컬 빌드
 
 ```bash

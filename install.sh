@@ -12,6 +12,8 @@ BINARY_URL=""
 REPO="parkjangwon/arma"
 TAG=""
 DRY_RUN=0
+UPDATE_RULES=0
+OVERWRITE_RULES=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -48,6 +50,14 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=1
       shift
       ;;
+    --update-rules)
+      UPDATE_RULES=1
+      shift
+      ;;
+    --overwrite-rules)
+      OVERWRITE_RULES=1
+      shift
+      ;;
     uninstall)
       MODE="uninstall"
       shift
@@ -58,7 +68,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1"
-      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run]"
+      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules]"
       exit 1
       ;;
   esac
@@ -85,6 +95,14 @@ resolve_latest_tag() {
     exit 1
   fi
   echo "$parsed"
+}
+
+resolve_effective_tag() {
+  if [[ -n "$TAG" ]]; then
+    echo "$TAG"
+  else
+    resolve_latest_tag
+  fi
 }
 
 detect_asset_name() {
@@ -116,12 +134,7 @@ detect_asset_name() {
 
 resolve_release_binary_url() {
   local target_tag asset_name
-  if [[ -n "$TAG" ]]; then
-    target_tag="$TAG"
-  else
-    target_tag="$(resolve_latest_tag)"
-  fi
-
+  target_tag="$(resolve_effective_tag)"
   asset_name="$(detect_asset_name)"
   echo "https://github.com/$REPO/releases/download/$target_tag/$asset_name"
 }
@@ -202,40 +215,53 @@ filter_pack:
 EOF
 }
 
-write_default_filter_packs() {
+sync_filter_packs_from_source() {
+  local source_dir="$1"
+  local overwrite="$2"
+
+  if [[ ! -d "$source_dir" ]]; then
+    return 1
+  fi
+
   mkdir -p "$APP_DIR/filter_packs"
+  if [[ "$overwrite" -eq 1 ]]; then
+    find "$APP_DIR/filter_packs" -maxdepth 1 -type f \( -name "*.yaml" -o -name "*.yml" \) -delete
+  fi
 
-  cat > "$APP_DIR/filter_packs/00-core.yaml" <<EOF
-version: "1.0.0-core"
-last_updated: "2026-02-22"
+  cp -a "$source_dir/." "$APP_DIR/filter_packs/"
+  return 0
+}
 
-deny_keywords:
-  - "ignore"
-  - "ignore previous instructions"
-  - "system prompt"
-  - "developer message"
-  - "시스템"
-  - "무시"
+sync_filter_packs_from_release() {
+  local target_tag="$1"
+  local overwrite="$2"
+  local archive_url="https://github.com/$REPO/archive/refs/tags/$target_tag.tar.gz"
+  local workdir archive root_dir
 
-deny_patterns:
-  - "(?i)ignore\\s+all\\s+previous\\s+instructions"
-  - "(?i)reveal\\s+.*\\s+prompt"
+  require_cmd curl
+  require_cmd tar
 
-settings:
-  sensitivity_score: 70
-EOF
+  workdir="$(mktemp -d)"
+  archive="$workdir/repo.tar.gz"
 
-  cat > "$APP_DIR/filter_packs/99-custom.yaml" <<EOF
-version: "1.0.0-custom"
-last_updated: "2026-02-22"
+  if ! curl -fsSL "$archive_url" -o "$archive"; then
+    rm -rf "$workdir"
+    return 1
+  fi
 
-allow_keywords:
-  - "internal-approved-test"
-  - "customer-whitelist-dummy"
+  if ! tar -xzf "$archive" -C "$workdir"; then
+    rm -rf "$workdir"
+    return 1
+  fi
 
-settings:
-  sensitivity_score: 75
-EOF
+  root_dir="$(find "$workdir" -maxdepth 1 -type d -name "*" | grep -v "^$workdir$" | head -n 1)"
+  if [[ -z "$root_dir" || ! -d "$root_dir/filter_packs" ]]; then
+    rm -rf "$workdir"
+    return 1
+  fi
+
+  sync_filter_packs_from_source "$root_dir/filter_packs" "$overwrite"
+  rm -rf "$workdir"
 }
 
 install_binary() {
@@ -311,9 +337,13 @@ if [[ "$MODE" == "uninstall" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EFFECTIVE_TAG="$(resolve_effective_tag)"
+TAG="$EFFECTIVE_TAG"
 
 if [[ $DRY_RUN -eq 1 ]]; then
   install_binary "$SCRIPT_DIR"
+  echo "Resolved release tag: $EFFECTIVE_TAG"
+  echo "Update rules mode: $UPDATE_RULES (overwrite=$OVERWRITE_RULES)"
   exit 0
 fi
 
@@ -336,11 +366,27 @@ if [[ ! -f "$APP_DIR/config.yaml" ]]; then
 fi
 
 if [[ ! -d "$APP_DIR/filter_packs" ]]; then
-  if [[ -d "$SCRIPT_DIR/filter_packs" ]]; then
-    mkdir -p "$APP_DIR/filter_packs"
-    cp -a "$SCRIPT_DIR/filter_packs/." "$APP_DIR/filter_packs/"
+  if ! sync_filter_packs_from_source "$SCRIPT_DIR/filter_packs" 1; then
+    if ! sync_filter_packs_from_release "$EFFECTIVE_TAG" 1; then
+      echo "Failed to initialize filter packs from source/release."
+      exit 1
+    fi
+  fi
+fi
+
+if [[ $UPDATE_RULES -eq 1 ]]; then
+  overwrite_mode=0
+  if [[ $OVERWRITE_RULES -eq 1 ]]; then
+    overwrite_mode=1
+  fi
+
+  if sync_filter_packs_from_source "$SCRIPT_DIR/filter_packs" "$overwrite_mode"; then
+    echo "Filter packs updated from local source (overwrite=$overwrite_mode)."
+  elif sync_filter_packs_from_release "$EFFECTIVE_TAG" "$overwrite_mode"; then
+    echo "Filter packs updated from release $EFFECTIVE_TAG (overwrite=$overwrite_mode)."
   else
-    write_default_filter_packs
+    echo "Failed to update filter packs from source/release."
+    exit 1
   fi
 fi
 
@@ -356,4 +402,5 @@ echo "Binary: $TARGET_BIN"
 echo "Wrapper: $WRAPPER_BIN"
 echo "Config: $APP_DIR/config.yaml"
 echo "Rules: $APP_DIR/filter_packs"
+echo "Installed release tag: $EFFECTIVE_TAG"
 echo "Try: arma start"

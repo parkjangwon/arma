@@ -14,7 +14,7 @@ use clap::Parser;
 use tokio::sync::RwLock;
 
 use crate::api::run_server;
-use crate::cli::{Cli, Commands, process};
+use crate::cli::{process, update, Cli, Commands};
 use crate::config::{load_app_config, load_filter_pack, resolve_filter_pack_dir};
 use crate::config::watcher::filter_pack_digest;
 use crate::core::engine::FilterEngine;
@@ -44,6 +44,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Status => run_status_dashboard(),
         Commands::Manual => {
             print_manual();
+            Ok(())
+        }
+        Commands::Update { yes } => {
+            update::run_update(yes)?;
             Ok(())
         }
     }
@@ -140,4 +144,5 @@ fn print_manual() {
     println!("  arma reload");
     println!("  arma status");
     println!("  arma manual");
+    println!("  arma update [--yes]");
 }

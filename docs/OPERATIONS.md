@@ -52,13 +52,20 @@ filter_pack:
 2) `arma reload` 실행 (또는 SIGHUP)
 3) `curl -s http://127.0.0.1:8080/health`로 `filter_pack_version` 확인
 
-### 2.5 기동/중지/리로드
+### 2.5 기동/중지/리로드/업데이트
 
 ```bash
 arma start
 arma reload
 arma stop
+sudo arma update
 ```
+
+`arma update` 동작:
+- 최신 릴리즈 바이너리로 교체
+- 필터팩 최신화 수행
+- 필터팩 덮어쓰기 여부를 대화형으로 확인
+- 완료 후 현재/최신 버전 정보를 출력
 
 ### 2.6 운영 점검
 

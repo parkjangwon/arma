@@ -31,13 +31,20 @@ sudo install -m 755 target/release/arma /usr/local/bin/arma
 - `filter_packs/00-core.yaml`
 - `filter_packs/99-custom.yaml`
 
-### 2.4 Start, reload, stop
+### 2.4 Start, reload, stop, update
 
 ```bash
 arma start
 arma reload
 arma stop
+sudo arma update
 ```
+
+`arma update` behavior:
+- replaces runtime binary with latest release
+- updates filter packs
+- asks whether to overwrite local rule files
+- prints current/latest version summary when done
 
 ### 2.5 Health check
 

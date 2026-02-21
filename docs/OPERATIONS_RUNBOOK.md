@@ -34,6 +34,10 @@ curl -fsSL <INSTALL_SCRIPT_URL> | sudo bash -s -- --binary-url <DIRECT_BINARY_UR
 
 `--binary-url`이 없으면 로컬 소스(`Cargo.toml`) 기준 빌드 설치를 시도합니다.
 
+필터팩 갱신 옵션:
+- `--update-rules`: 최신 필터팩 동기화 수행
+- `--overwrite-rules`: 기존 YAML을 덮어쓰며 동기화
+
 GitHub 릴리즈 기반 원라인 설치(`install.sh`)도 지원합니다.
 
 - 예시:
@@ -64,6 +68,7 @@ arma stop
 arma restart
 arma reload
 arma status
+sudo arma update
 ```
 
 ### 2.2 Docker 운영
@@ -102,6 +107,7 @@ logging:
 
 filter_pack:
   dir: ./filter_packs
+  profile: balanced
 ```
 
 ### 3.1 `server.host` / `server.port`
