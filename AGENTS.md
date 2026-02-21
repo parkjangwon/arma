@@ -80,3 +80,40 @@
 2. Confirm if change touches hot path (validate, watcher, loader, server bind).
 3. Keep behavior deterministic and observable.
 4. Validate and document operational impact in `docs/` when behavior changes.
+
+## Release Operations Policy
+- Versioning follows semantic tags: `vX.Y.Z`.
+- For release readiness, keep `Cargo.toml` and `Cargo.lock` synchronized.
+- After creating a tag/release, upload platform assets via GitHub Actions workflow (`Build and Upload Release Assets`).
+- Verify installer path before announcing release:
+  - `install.sh --dry-run` for target platform
+  - one-line install command in README
+
+## Installer Policy (Single Entry)
+- Remote one-line installation entrypoint is `install.sh` only.
+- `install.sh` supports:
+  - local source build install,
+  - release-binary install (`--binary-url` or auto-resolved release asset),
+  - dry-run verification (`--dry-run`),
+  - optional systemd registration (`--with-systemd`).
+- Keep installer behavior backward compatible unless a breaking change is explicitly documented.
+
+## Rule Pack Operations Policy
+- Default active packs:
+  - `filter_packs/00-core.yaml`
+  - `filter_packs/99-custom.yaml`
+- Default inactive packs (opt-in):
+  - `filter_packs/50-finance.yaml.disabled`
+  - `filter_packs/60-public-sector.yaml.disabled`
+  - `filter_packs/70-ecommerce.yaml.disabled`
+  - `filter_packs/98-optional-high-risk.yaml.disabled`
+- Activation rule: rename `.yaml.disabled` to `.yaml`.
+- Any rule-pack activation/deactivation decision must include rollout and false-positive monitoring notes.
+
+## Documentation Sync Rule
+- If installation or runtime control behavior changes, update both:
+  - `README.md` (quick path)
+  - `docs/OPERATIONS_RUNBOOK.md` (operator path)
+- If vendor integration behavior changes, update:
+  - `docs/API_INTEGRATION.md`
+- Keep Korean-first docs as primary and maintain English companion files where applicable.
