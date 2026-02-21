@@ -157,8 +157,20 @@ ARMA는 `filter_packs/` 디렉토리의 YAML을 파일명 오름차순으로 병
 
 - 권장 파일 전략
   - `00-core.yaml`: 전사 공통 보안 룰
-  - `50-team.yaml`: 조직/서비스 팀 룰
+  - `50-finance.yaml.disabled`: 금융 도메인 강화 룰(기본 비활성)
+  - `60-public-sector.yaml.disabled`: 공공/행정 도메인 강화 룰(기본 비활성)
+  - `70-ecommerce.yaml.disabled`: 커머스 도메인 강화 룰(기본 비활성)
   - `99-custom.yaml`: 고객별 예외/커스텀 룰
+
+- 선택적 고위험 팩
+  - `98-optional-high-risk.yaml.disabled`는 기본 비활성
+  - 활성화하려면 파일명을 `.yaml`로 변경
+  - 고위험 탐지 강화 대신 오탐 증가 가능성이 있으므로 단계적 적용 권장
+
+- 도메인 팩 활성화 예시
+  - `50-finance.yaml.disabled` -> `50-finance.yaml`
+  - `60-public-sector.yaml.disabled` -> `60-public-sector.yaml`
+  - `70-ecommerce.yaml.disabled` -> `70-ecommerce.yaml`
 
 ### 3.1 변경 규칙
 

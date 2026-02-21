@@ -1,0 +1,29 @@
+# Optional high-risk pack (disabled by default).
+#
+# Enable by renaming this file to:
+#   98-optional-high-risk.yaml
+#
+# This pack may increase false positives.
+
+deny_keywords:
+  - "developer note"
+  - "internal prompt"
+  - "hidden instruction"
+  - "source code"
+  - "training data"
+  - "prompt template"
+  - "tool output"
+  - "system context"
+  - "internal chain"
+  - "모든 내부 정보"
+  - "숨겨진 지시"
+  - "전체 프롬프트"
+
+deny_patterns:
+  - "(?i)(show|print|dump|export).*(all|full).*(prompt|instruction|context)"
+  - "(?i)(reveal|expose).*(source\\s*code|training\\s*data|tool\\s*output)"
+  - "(?i)(bypass|disable).*(every|all).*(safety|policy|restriction)"
+  - "(?i)(숨겨진|내부|전체).*(지시|프롬프트|컨텍스트).*(공개|출력)"
+
+settings:
+  sensitivity_score: 85

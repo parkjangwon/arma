@@ -82,4 +82,5 @@ docker compose down
 - Keep `logging.level` at `info`; use `debug` only for investigation windows
 - Keep Compose `json-file` rotation (`10m`, `3`) enabled
 - Keep `server.host` at `0.0.0.0` in container environments
-- Use filename priority conventions such as `00-...`, `50-...`, `99-...`
+- Use `00-core` and `99-custom` as default; enable domain packs (`50-finance.yaml.disabled`, `60-public-sector.yaml.disabled`, `70-ecommerce.yaml.disabled`) only when needed
+- Keep high-risk pack disabled by default (`98-optional-high-risk.yaml.disabled`) and enable only when needed

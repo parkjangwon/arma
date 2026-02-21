@@ -155,8 +155,20 @@ ARMA merges YAML files in `filter_packs/` in ascending filename order.
 
 - Recommended file strategy
   - `00-core.yaml`: global baseline rules
-  - `50-team.yaml`: team or domain rules
+  - `50-finance.yaml.disabled`: finance hardening rules (disabled by default)
+  - `60-public-sector.yaml.disabled`: public-sector hardening rules (disabled by default)
+  - `70-ecommerce.yaml.disabled`: e-commerce hardening rules (disabled by default)
   - `99-custom.yaml`: tenant-specific exceptions
+
+- Optional high-risk pack
+  - `98-optional-high-risk.yaml.disabled` is disabled by default
+  - enable by renaming the file extension to `.yaml`
+  - recommended for phased rollout because it may increase false positives
+
+- Domain pack enable examples
+  - `50-finance.yaml.disabled` -> `50-finance.yaml`
+  - `60-public-sector.yaml.disabled` -> `60-public-sector.yaml`
+  - `70-ecommerce.yaml.disabled` -> `70-ecommerce.yaml`
 
 ### 3.1 Merge semantics
 

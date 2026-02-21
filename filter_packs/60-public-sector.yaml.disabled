@@ -1,0 +1,20 @@
+deny_keywords:
+  - "resident registration number"
+  - "passport number"
+  - "national id"
+  - "classified"
+  - "official document"
+  - "internal memo"
+  - "security clearance"
+  - "주민등록번호"
+  - "여권번호"
+  - "공문서"
+  - "비공개 문서"
+  - "내부 보고서"
+  - "기밀"
+
+deny_patterns:
+  - "(?i)(resident\\s*registration|national\\s*id|passport).*(number|id)"
+  - "(?i)(classified|confidential|restricted).*(document|report|memo)"
+  - "(?i)(official\\s*document|internal\\s*memo|security\\s*clearance)"
+  - "(?i)(주민등록번호|여권번호|공문서|비공개|기밀).*(출력|공개|유출)"

@@ -1,0 +1,19 @@
+deny_keywords:
+  - "admin panel"
+  - "merchant secret"
+  - "payment gateway key"
+  - "refund all orders"
+  - "customer pii"
+  - "shipping address"
+  - "order database"
+  - "관리자 페이지"
+  - "결제 키"
+  - "주문 데이터"
+  - "고객 개인정보"
+  - "배송지 정보"
+
+deny_patterns:
+  - "(?i)(admin\\s*panel|merchant\\s*secret|payment\\s*gateway\\s*key)"
+  - "(?i)(refund|cancel|modify).*(all\\s+)?orders"
+  - "(?i)(customer\\s*pii|shipping\\s*address|order\\s*database)"
+  - "(?i)(관리자|결제\\s*키|주문\\s*데이터|고객\\s*개인정보|배송지).*(출력|공개|유출)"

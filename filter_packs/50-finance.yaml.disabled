@@ -1,0 +1,23 @@
+deny_keywords:
+  - "account number"
+  - "bank statement"
+  - "routing number"
+  - "swift code"
+  - "credit card number"
+  - "cvv"
+  - "otp code"
+  - "one time password"
+  - "wire transfer"
+  - "transaction history"
+  - "계좌번호"
+  - "카드번호"
+  - "보안코드"
+  - "인증번호"
+  - "송금 요청"
+
+deny_patterns:
+  - "(?i)(account|routing|swift).*(number|code)"
+  - "(?i)(credit\\s*card|card\\s*number|cvv|cvc)"
+  - "(?i)(otp|one\\s*time\\s*password|verification\\s*code)"
+  - "(?i)(wire\\s*transfer|send\\s*money|bank\\s*transfer)"
+  - "(?i)(계좌|카드|인증번호|송금).*(공개|전송|출력)"

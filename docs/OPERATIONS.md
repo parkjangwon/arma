@@ -82,4 +82,5 @@ docker compose down
 - `logging.level`은 기본 `info`, 상세 분석 시에만 `debug` 사용
 - Compose `json-file` 로깅 옵션(`10m`, `3`) 유지
 - `server.host`는 컨테이너 환경에서 `0.0.0.0` 유지
-- 룰셋 파일명은 `00-...`, `50-...`, `99-...` 패턴으로 우선순위 관리
+- 룰셋 파일명은 `00-core`, `99-custom` 기본 + 도메인 팩(`50-finance.yaml.disabled`, `60-public-sector.yaml.disabled`, `70-ecommerce.yaml.disabled`) 필요 시 활성화
+- 고위험 탐지 팩은 `98-optional-high-risk.yaml.disabled`를 필요 시 `*.yaml`로 활성화
