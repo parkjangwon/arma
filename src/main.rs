@@ -4,6 +4,7 @@ mod config;
 mod core;
 mod filter_pack;
 mod logger;
+mod metrics;
 mod tui;
 
 use std::path::PathBuf;
@@ -17,6 +18,7 @@ use crate::cli::{Cli, Commands, process};
 use crate::config::{load_app_config, load_filter_pack, resolve_filter_pack_dir};
 use crate::config::watcher::filter_pack_digest;
 use crate::core::engine::FilterEngine;
+use crate::metrics::RuntimeMetrics;
 use crate::tui::{run_dashboard, DashboardInfo};
 
 /// Runs the ARMA API server with hot-reload workers.
@@ -62,11 +64,13 @@ fn run_start(daemon: bool) -> Result<(), Box<dyn std::error::Error>> {
         tracing::info!(log_path = %app_config.logging.path, "logger initialized");
 
         let filter_pack_dir = resolve_filter_pack_dir(&app_config, &config_path);
-        let filter_pack = load_filter_pack(&filter_pack_dir).await?;
+        let filter_profile = app_config.filter_pack.profile.clone();
+        let filter_pack = load_filter_pack(&filter_pack_dir, filter_profile.as_deref()).await?;
         let initial_filter_pack_digest = filter_pack_digest(&filter_pack);
         let initial_engine = FilterEngine::new(&filter_pack)?;
 
         let shared_engine = Arc::new(RwLock::new(initial_engine));
+        let runtime_metrics = Arc::new(RuntimeMetrics::new(1024));
 
         let watcher_engine = Arc::clone(&shared_engine);
         let watcher_config_path = config_path.clone();
@@ -86,6 +90,7 @@ fn run_start(daemon: bool) -> Result<(), Box<dyn std::error::Error>> {
 
         run_server(
             shared_engine,
+            runtime_metrics,
             app_config,
             config_path,
             filter_pack_dir,
@@ -112,7 +117,7 @@ fn run_status_dashboard() -> Result<(), Box<dyn std::error::Error>> {
         let config_path = PathBuf::from("config.yaml");
         let config = load_app_config(&config_path).await?;
         let filter_pack_dir = resolve_filter_pack_dir(&config, &config_path);
-        let filter_pack = load_filter_pack(&filter_pack_dir).await?;
+        let filter_pack = load_filter_pack(&filter_pack_dir, config.filter_pack.profile.as_deref()).await?;
         Ok::<(String, String), Box<dyn std::error::Error>>((
             filter_pack.version,
             filter_pack.last_updated,

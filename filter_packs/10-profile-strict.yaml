@@ -1,0 +1,9 @@
+version: "1.1.2-strict"
+last_updated: "2026-02-22"
+
+deny_keywords:
+  - "disable moderation"
+  - "reveal hidden instructions"
+
+settings:
+  sensitivity_score: 85

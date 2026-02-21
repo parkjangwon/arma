@@ -122,7 +122,7 @@ pub async fn trigger_hot_reload(
         absolute_path(current_filter_pack_dir)
     };
 
-    let filter_pack = match load_filter_pack(&filter_pack_dir).await {
+    let filter_pack = match load_filter_pack(&filter_pack_dir, app_config.filter_pack.profile.as_deref()).await {
         Ok(pack) => pack,
         Err(error) => {
             tracing::warn!(error = %error, "filter-pack parse failed; keeping current engine");

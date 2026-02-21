@@ -1,5 +1,5 @@
-use std::fmt;
 use std::cmp::Ordering;
+use std::fmt;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
@@ -60,9 +60,13 @@ struct PartialSettings {
 }
 
 /// Loads and merges all rule YAML files from a directory.
-pub async fn load_merged_filter_pack_dir(dir_path: &Path) -> Result<FilterPack, LoaderError> {
+pub async fn load_merged_filter_pack_dir(
+    dir_path: &Path,
+    profile: Option<&str>,
+) -> Result<FilterPack, LoaderError> {
     let mut files = collect_rule_files(dir_path)?;
     files.sort_by(compare_file_name_then_path);
+    files.retain(|path| should_include_rule_file(path, profile));
 
     tracing::debug!(
         rule_dir = %dir_path.display(),
@@ -144,6 +148,22 @@ fn is_yaml_file(path: &Path) -> bool {
     }
 }
 
+fn should_include_rule_file(path: &Path, profile: Option<&str>) -> bool {
+    let file_name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
+
+    if !file_name.contains("-profile-") {
+        return true;
+    }
+
+    match profile {
+        Some(value) => file_name.contains(&format!("-profile-{value}")),
+        None => false,
+    }
+}
+
 fn compare_file_name_then_path(left: &PathBuf, right: &PathBuf) -> Ordering {
     let left_name = left
         .file_name()
@@ -157,5 +177,83 @@ fn compare_file_name_then_path(left: &PathBuf, right: &PathBuf) -> Ordering {
     match left_name.cmp(right_name) {
         Ordering::Equal => left.cmp(right),
         value => value,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::load_merged_filter_pack_dir;
+
+    fn temp_test_dir() -> std::path::PathBuf {
+        for attempt in 0..32 {
+            let unique = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("valid unix time")
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "arma-loader-test-{}-{attempt}-{}",
+                std::process::id(),
+                unique
+            ));
+            if std::fs::create_dir(&path).is_ok() {
+                return path;
+            }
+        }
+
+        panic!("failed to create temp test directory");
+    }
+
+    #[tokio::test]
+    async fn excludes_profile_files_when_profile_is_not_set() {
+        let dir = temp_test_dir();
+        std::fs::write(
+            dir.join("00-core.yaml"),
+            "version: \"1\"\nlast_updated: \"today\"\nallow_keywords: [\"core\"]\nsettings:\n  sensitivity_score: 70\n",
+        )
+        .expect("write core rule");
+        std::fs::write(
+            dir.join("10-profile-strict.yaml"),
+            "version: \"1\"\nlast_updated: \"today\"\nallow_keywords: [\"strict\"]\nsettings:\n  sensitivity_score: 90\n",
+        )
+        .expect("write strict profile rule");
+
+        let merged = load_merged_filter_pack_dir(&dir, None)
+            .await
+            .expect("load merged pack without profile");
+        assert!(merged.allow_keywords.iter().any(|value| value == "core"));
+        assert!(!merged.allow_keywords.iter().any(|value| value == "strict"));
+
+        std::fs::remove_dir_all(dir).expect("cleanup temp test dir");
+    }
+
+    #[tokio::test]
+    async fn includes_only_selected_profile_file() {
+        let dir = temp_test_dir();
+        std::fs::write(
+            dir.join("00-core.yaml"),
+            "version: \"1\"\nlast_updated: \"today\"\nallow_keywords: [\"core\"]\nsettings:\n  sensitivity_score: 70\n",
+        )
+        .expect("write core rule");
+        std::fs::write(
+            dir.join("10-profile-balanced.yaml"),
+            "version: \"1\"\nlast_updated: \"today\"\nallow_keywords: [\"balanced\"]\nsettings:\n  sensitivity_score: 75\n",
+        )
+        .expect("write balanced profile rule");
+        std::fs::write(
+            dir.join("10-profile-strict.yaml"),
+            "version: \"1\"\nlast_updated: \"today\"\nallow_keywords: [\"strict\"]\nsettings:\n  sensitivity_score: 90\n",
+        )
+        .expect("write strict profile rule");
+
+        let merged = load_merged_filter_pack_dir(&dir, Some("strict"))
+            .await
+            .expect("load merged pack with strict profile");
+        assert!(merged.allow_keywords.iter().any(|value| value == "core"));
+        assert!(merged.allow_keywords.iter().any(|value| value == "strict"));
+        assert!(!merged.allow_keywords.iter().any(|value| value == "balanced"));
+
+        std::fs::remove_dir_all(dir).expect("cleanup temp test dir");
     }
 }

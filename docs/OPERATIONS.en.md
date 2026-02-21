@@ -45,6 +45,8 @@ arma stop
 curl -s http://127.0.0.1:8080/health
 ```
 
+`/health` now includes runtime metrics such as `total_requests`, `block_rate`, `latency_p95_ms`, and `top_block_reasons` in addition to `filter_pack_version`.
+
 ## 3. Docker installation and operations
 
 ### 3.1 Build
@@ -82,5 +84,6 @@ docker compose down
 - Keep `logging.level` at `info`; use `debug` only for investigation windows
 - Keep Compose `json-file` rotation (`10m`, `3`) enabled
 - Keep `server.host` at `0.0.0.0` in container environments
-- Use `00-core` and `99-custom` as default; enable domain packs (`50-finance.yaml.disabled`, `60-public-sector.yaml.disabled`, `70-ecommerce.yaml.disabled`) only when needed
+- Keep `00-core` and `99-custom` as baseline, and select one profile pack via `filter_pack.profile` (`10-profile-balanced.yaml` or `10-profile-strict.yaml`)
+- Enable domain packs (`50-finance.yaml.disabled`, `60-public-sector.yaml.disabled`, `70-ecommerce.yaml.disabled`) only when needed
 - Keep high-risk pack disabled by default (`98-optional-high-risk.yaml.disabled`) and enable only when needed

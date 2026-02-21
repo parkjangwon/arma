@@ -7,11 +7,13 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::config::SharedEngine;
+use crate::metrics::{ReasonHit, RuntimeMetrics};
 
 /// Shared API state.
 #[derive(Clone)]
 pub struct AppState {
     pub engine: SharedEngine,
+    pub metrics: std::sync::Arc<RuntimeMetrics>,
 }
 
 /// Prompt validation request payload.
@@ -35,6 +37,13 @@ pub struct ValidateResponse {
 pub struct HealthResponse {
     pub status: &'static str,
     pub filter_pack_version: String,
+    pub total_requests: u64,
+    pub pass_count: u64,
+    pub block_count: u64,
+    pub block_rate: f64,
+    pub latency_p50_ms: u128,
+    pub latency_p95_ms: u128,
+    pub top_block_reasons: Vec<ReasonHit>,
 }
 
 /// Handles prompt safety validation.
@@ -65,6 +74,10 @@ pub async fn validate_prompt(
                 "prompt validation completed"
             );
 
+            state
+                .metrics
+                .record_validation(validation.is_safe, &validation.reason, latency_ms);
+
             (
                 StatusCode::OK,
                 Json(ValidateResponse {
@@ -78,13 +91,17 @@ pub async fn validate_prompt(
         }
         Err(error) => {
             tracing::error!(error = %error, "prompt validation failed");
+            let latency_ms = started.elapsed().as_millis();
+            state
+                .metrics
+                .record_validation(true, "ENGINE_ERROR_BYPASS", latency_ms);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ValidateResponse {
                     is_safe: true,
                     reason: "ENGINE_ERROR_BYPASS".to_string(),
                     score: 0,
-                    latency_ms: started.elapsed().as_millis(),
+                    latency_ms,
                 }),
             )
                 .into_response()
@@ -110,12 +127,20 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
         let guard = state.engine.read().await;
         guard.filter_pack_version().to_string()
     };
+    let snapshot = state.metrics.snapshot();
 
     (
         StatusCode::OK,
         Json(HealthResponse {
             status: "ok",
             filter_pack_version: version,
+            total_requests: snapshot.total_requests,
+            pass_count: snapshot.pass_count,
+            block_count: snapshot.block_count,
+            block_rate: snapshot.block_rate,
+            latency_p50_ms: snapshot.latency_p50_ms,
+            latency_p95_ms: snapshot.latency_p95_ms,
+            top_block_reasons: snapshot.top_block_reasons,
         }),
     )
 }

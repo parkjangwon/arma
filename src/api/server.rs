@@ -6,10 +6,12 @@ use tokio::net::TcpListener;
 use crate::api::{AppState, build_router};
 use crate::config::watcher::trigger_hot_reload;
 use crate::config::{AppConfig, SharedEngine};
+use crate::metrics::RuntimeMetrics;
 
 /// Runs the Axum API server with graceful signal-driven shutdown.
 pub async fn run_server(
     shared_engine: SharedEngine,
+    metrics: std::sync::Arc<RuntimeMetrics>,
     app_config: AppConfig,
     config_path: PathBuf,
     filter_pack_dir: PathBuf,
@@ -17,6 +19,7 @@ pub async fn run_server(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let router = build_router(AppState {
         engine: shared_engine.clone(),
+        metrics,
     });
     let bind_address = format!("{}:{}", app_config.server.host, app_config.server.port);
     let listener = bind_listener_with_backlog(&bind_address, 4096)?;

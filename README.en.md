@@ -23,7 +23,7 @@ ARMA is a lightweight security gateway that validates prompts before they reach 
 ## Architecture at a glance
 
 - API: `POST /v1/validate`, `GET /health`
-- Rule Loader: merges YAML files in `filter_packs/` in filename ascending order
+- Rule Loader: merges YAML files in `filter_packs/` in filename ascending order (when `filter_pack.profile` is set, only matching profile files are merged)
 - Shared engine state: `Arc<RwLock<FilterEngine>>`
 - Signals: SIGTERM graceful shutdown, SIGHUP manual reload
 

@@ -31,4 +31,6 @@ pub struct LoggingConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct FilterPackConfig {
     pub dir: String,
+    #[serde(default)]
+    pub profile: Option<String>,
 }

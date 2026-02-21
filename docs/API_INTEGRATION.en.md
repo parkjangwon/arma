@@ -57,7 +57,19 @@ Response:
 ```json
 {
   "status": "ok",
-  "filter_pack_version": "1.0.0-custom"
+  "filter_pack_version": "1.1.2",
+  "total_requests": 128,
+  "pass_count": 96,
+  "block_count": 32,
+  "block_rate": 0.25,
+  "latency_p50_ms": 2,
+  "latency_p95_ms": 5,
+  "top_block_reasons": [
+    {
+      "reason": "BLOCK_DENY_PATTERN",
+      "count": 20
+    }
+  ]
 }
 ```
 

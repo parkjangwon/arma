@@ -39,9 +39,11 @@ logging:
 
 filter_pack:
   dir: ./filter_packs
+  profile: balanced
 ```
 
 `filter_packs/` 디렉토리의 `*.yaml`, `*.yml` 파일이 파일명 오름차순으로 병합됩니다.
+`*-profile-<name>.yaml` 형식 파일은 `profile` 값과 일치할 때만 병합됩니다 (예: `10-profile-strict.yaml`).
 
 ## 4. 로컬 개발 실행
 

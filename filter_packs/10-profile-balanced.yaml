@@ -1,0 +1,5 @@
+version: "1.1.2-balanced"
+last_updated: "2026-02-22"
+
+settings:
+  sensitivity_score: 75

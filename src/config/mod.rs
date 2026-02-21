@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::core::engine::FilterEngine;
-use crate::filter_pack::loader::{LoaderError, load_merged_filter_pack_dir};
+use crate::filter_pack::loader::{load_merged_filter_pack_dir, LoaderError};
 use crate::filter_pack::FilterPack;
 
 pub mod models;
@@ -71,8 +71,11 @@ pub async fn load_app_config(path: &Path) -> Result<AppConfig, ConfigError> {
 }
 
 /// Loads merged filter-pack data from directory.
-pub async fn load_filter_pack(dir_path: &Path) -> Result<FilterPack, ConfigError> {
-    let pack = load_merged_filter_pack_dir(dir_path).await?;
+pub async fn load_filter_pack(
+    dir_path: &Path,
+    profile: Option<&str>,
+) -> Result<FilterPack, ConfigError> {
+    let pack = load_merged_filter_pack_dir(dir_path, profile).await?;
     Ok(pack)
 }
 

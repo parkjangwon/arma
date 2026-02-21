@@ -45,6 +45,8 @@ arma stop
 curl -s http://127.0.0.1:8080/health
 ```
 
+`/health`에는 `filter_pack_version` 외에 `total_requests`, `block_rate`, `latency_p95_ms`, `top_block_reasons`가 포함되어 운영 상태를 빠르게 점검할 수 있습니다.
+
 ## 3. Docker 설치/운영
 
 ### 3.1 빌드
@@ -82,5 +84,6 @@ docker compose down
 - `logging.level`은 기본 `info`, 상세 분석 시에만 `debug` 사용
 - Compose `json-file` 로깅 옵션(`10m`, `3`) 유지
 - `server.host`는 컨테이너 환경에서 `0.0.0.0` 유지
-- 룰셋 파일명은 `00-core`, `99-custom` 기본 + 도메인 팩(`50-finance.yaml.disabled`, `60-public-sector.yaml.disabled`, `70-ecommerce.yaml.disabled`) 필요 시 활성화
+- 룰셋 파일명은 `00-core`, `99-custom` 기본 + 프로파일 팩(`10-profile-balanced.yaml`, `10-profile-strict.yaml`) 중 config의 `filter_pack.profile`에 맞는 파일 1개만 적용
+- 도메인 팩(`50-finance.yaml.disabled`, `60-public-sector.yaml.disabled`, `70-ecommerce.yaml.disabled`)은 필요 시 활성화
 - 고위험 탐지 팩은 `98-optional-high-risk.yaml.disabled`를 필요 시 `*.yaml`로 활성화

@@ -39,9 +39,11 @@ logging:
 
 filter_pack:
   dir: ./filter_packs
+  profile: balanced
 ```
 
 All `*.yaml` and `*.yml` files in `filter_packs/` are merged in ascending filename order.
+Files named `*-profile-<name>.yaml` are merged only when `profile` matches (for example, `10-profile-strict.yaml`).
 
 ## 4. Run locally
 

@@ -198,6 +198,7 @@ logging:
 
 filter_pack:
   dir: ./filter_packs
+  profile: balanced
 EOF
 }
 
