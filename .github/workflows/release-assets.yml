@@ -1,0 +1,74 @@
+name: Build and Upload Release Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (e.g. v1.0.0)
+        required: true
+        default: v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset_name: arma-linux-amd64
+            install_deps: ""
+          - os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+            asset_name: arma-linux-386
+            install_deps: sudo apt-get update && sudo apt-get install -y gcc-multilib
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset_name: arma-windows-amd64.exe
+            install_deps: ""
+          - os: macos-13
+            target: x86_64-apple-darwin
+            asset_name: arma-macos-amd64
+            install_deps: ""
+          - os: macos-14
+            target: aarch64-apple-darwin
+            asset_name: arma-macos-arm64
+            install_deps: ""
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install platform dependencies
+        if: matrix.install_deps != ''
+        run: ${{ matrix.install_deps }}
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }} --bin arma
+
+      - name: Prepare upload artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp "target/${{ matrix.target }}/release/arma.exe" "dist/${{ matrix.asset_name }}"
+          else
+            cp "target/${{ matrix.target }}/release/arma" "dist/${{ matrix.asset_name }}"
+          fi
+
+      - name: Upload artifact to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: dist/${{ matrix.asset_name }}
+          fail_on_unmatched_files: true

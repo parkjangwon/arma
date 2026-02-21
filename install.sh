@@ -180,7 +180,11 @@ install_binary() {
     local tmp_bin
     tmp_bin="$(mktemp)"
     echo "Downloading binary from: $BINARY_URL"
-    curl -fL "$BINARY_URL" -o "$tmp_bin"
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+      curl -fL -H "Authorization: Bearer $GITHUB_TOKEN" "$BINARY_URL" -o "$tmp_bin"
+    else
+      curl -fL "$BINARY_URL" -o "$tmp_bin"
+    fi
     install -m 755 "$tmp_bin" "$TARGET_BIN"
     rm -f "$tmp_bin"
     return
