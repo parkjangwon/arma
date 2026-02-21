@@ -34,7 +34,7 @@ struct ValidateResponse {
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if TOTAL_REQUESTS % CONCURRENT_USERS != 0 {
-        panic!("TOTAL_REQUESTS must be divisible by CONCURRENT_USERS");
+        return Err("TOTAL_REQUESTS must be divisible by CONCURRENT_USERS".into());
     }
 
     let target_url = std::env::var("ARMA_STRESS_TARGET_URL")
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .build()?,
     );
 
-    wait_for_server_ready(&shared_client, &target_url).await;
+    wait_for_server_ready(&shared_client, &target_url).await?;
 
     let original_filter_pack = tokio::fs::read_to_string(FILTER_PACK_PATH).await?;
     let bombed_filter_pack = build_bombed_filter_pack(&original_filter_pack)?;
@@ -69,7 +69,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             if let Err(error) = tokio::fs::write(FILTER_PACK_PATH, payload).await {
-                panic!("hot-reload bomber write failed: {error}");
+                eprintln!("hot-reload bomber write failed: {error}");
+                break;
             }
 
             toggle = !toggle;
@@ -77,7 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if let Err(error) = tokio::fs::write(FILTER_PACK_PATH, &bomber_original).await {
-            panic!("failed to restore custom filter-pack file after bomber stop: {error}");
+            eprintln!("failed to restore custom filter-pack file after bomber stop: {error}");
         }
     });
 
@@ -99,74 +100,79 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
 
                 let request_started = Instant::now();
-                let response = match client.post(&target_url).json(&request).send().await {
-                    Ok(value) => value,
-                    Err(error) => panic!(
-                        "request transport failed: {} [{}]",
-                        classify_transport_error(&error),
-                        error
-                    ),
-                };
+                let response = client
+                    .post(&target_url)
+                    .json(&request)
+                    .send()
+                    .await
+                    .map_err(|error| {
+                        format!(
+                            "request transport failed: {} [{}]",
+                            classify_transport_error(&error),
+                            error
+                        )
+                    })?;
 
                 if response.status().as_u16() == 500 {
-                    panic!("server returned 500 error");
+                    return Err("server returned 500 error".to_string());
                 }
 
                 if !response.status().is_success() {
-                    panic!("server returned non-success status: {}", response.status());
+                    return Err(format!("server returned non-success status: {}", response.status()));
                 }
 
-                let body = match response.json::<ValidateResponse>().await {
-                    Ok(value) => value,
-                    Err(error) => panic!("response JSON decode failed: {error}"),
-                };
+                let body = response
+                    .json::<ValidateResponse>()
+                    .await
+                    .map_err(|error| format!("response JSON decode failed: {error}"))?;
 
                 if malicious && body.is_safe {
-                    panic!(
+                    return Err(format!(
                         "malicious prompt misclassified as safe. reason={}, score={}, latency_ms={}",
                         body.reason, body.score, body.latency_ms
-                    );
+                    ));
                 }
 
                 latencies_ms.push(request_started.elapsed().as_secs_f64() * 1_000.0);
             }
 
-            latencies_ms
+            Ok::<Vec<f64>, String>(latencies_ms)
         });
     }
 
     let mut collected_latencies = Vec::with_capacity(TOTAL_REQUESTS);
     while let Some(joined) = workers.join_next().await {
         match joined {
-            Ok(latencies) => {
+            Ok(Ok(latencies)) => {
                 collected_latencies.extend(latencies);
             }
-            Err(error) => panic!("load worker panicked: {error}"),
+            Ok(Err(error)) => return Err(error.into()),
+            Err(error) => return Err(format!("load worker join error: {error}").into()),
         }
     }
 
     stop_bomber.store(true, Ordering::Relaxed);
-    match bomber_task.await {
-        Ok(()) => {}
-        Err(error) => panic!("hot-reload bomber panicked: {error}"),
+    if let Err(error) = bomber_task.await {
+        return Err(format!("hot-reload bomber join error: {error}").into());
     }
 
     let elapsed = started.elapsed();
     if collected_latencies.len() != TOTAL_REQUESTS {
-        panic!(
+        return Err(format!(
             "request accounting mismatch. expected={}, actual={}",
             TOTAL_REQUESTS,
             collected_latencies.len()
-        );
+        )
+        .into());
     }
 
     collected_latencies.sort_by(f64::total_cmp);
 
     let elapsed_secs = elapsed.as_secs_f64();
     let tps = (TOTAL_REQUESTS as f64) / elapsed_secs;
-    let p50 = percentile(&collected_latencies, 0.50);
-    let p95 = percentile(&collected_latencies, 0.95);
-    let p99 = percentile(&collected_latencies, 0.99);
+    let p50 = percentile(&collected_latencies, 0.50)?;
+    let p95 = percentile(&collected_latencies, 0.95)?;
+    let p99 = percentile(&collected_latencies, 0.99)?;
 
     println!("=== ARMA Stress Test Report ===");
     println!("Total Requests : {TOTAL_REQUESTS}");
@@ -212,29 +218,34 @@ fn build_markdown_report(
     )
 }
 
-async fn wait_for_server_ready(client: &Client, target_url: &str) {
+async fn wait_for_server_ready(
+    client: &Client,
+    target_url: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     let health_url = target_url.replacen("/v1/validate", "/health", 1);
     let started = Instant::now();
 
     loop {
         match client.get(&health_url).send().await {
-            Ok(response) if response.status().is_success() => return,
+            Ok(response) if response.status().is_success() => return Ok(()),
             Ok(response) => {
                 if started.elapsed() > Duration::from_secs(20) {
-                    panic!(
+                    return Err(format!(
                         "server readiness check failed: status={} url={}",
                         response.status(),
                         health_url
-                    );
+                    )
+                    .into());
                 }
             }
             Err(error) => {
                 if started.elapsed() > Duration::from_secs(20) {
-                    panic!(
+                    return Err(format!(
                         "server readiness check failed: {} [{}]",
                         classify_transport_error(&error),
                         error
-                    );
+                    )
+                    .into());
                 }
             }
         }
@@ -290,21 +301,18 @@ fn build_bombed_filter_pack(original: &str) -> Result<String, Box<dyn std::error
     let mut root: Value = serde_yaml::from_str(original)?;
     let keyword = Value::String("dummy_123".to_string());
 
-    let mapping = match root.as_mapping_mut() {
-        Some(value) => value,
-        None => panic!("filter-pack file root must be a mapping"),
-    };
+    let mapping = root
+        .as_mapping_mut()
+        .ok_or("filter-pack file root must be a mapping")?;
 
     let allow_key = Value::String("allow_keywords".to_string());
-    let allow_list = match mapping.get_mut(&allow_key) {
-        Some(value) => value,
-        None => panic!("filter-pack file must contain allow_keywords"),
-    };
+    let allow_list = mapping
+        .get_mut(&allow_key)
+        .ok_or("filter-pack file must contain allow_keywords")?;
 
-    let sequence = match allow_list.as_sequence_mut() {
-        Some(value) => value,
-        None => panic!("allow_keywords must be a sequence"),
-    };
+    let sequence = allow_list
+        .as_sequence_mut()
+        .ok_or("allow_keywords must be a sequence")?;
 
     if !sequence.iter().any(|value| value == &keyword) {
         sequence.push(keyword);
@@ -314,12 +322,12 @@ fn build_bombed_filter_pack(original: &str) -> Result<String, Box<dyn std::error
     Ok(serialized)
 }
 
-fn percentile(sorted: &[f64], ratio: f64) -> f64 {
+fn percentile(sorted: &[f64], ratio: f64) -> Result<f64, Box<dyn std::error::Error>> {
     if sorted.is_empty() {
-        panic!("percentile input cannot be empty");
+        return Err("percentile input cannot be empty".into());
     }
 
     let position = ((sorted.len() as f64) * ratio).ceil() as usize;
     let index = position.saturating_sub(1).min(sorted.len() - 1);
-    sorted[index]
+    Ok(sorted[index])
 }

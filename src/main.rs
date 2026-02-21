@@ -57,7 +57,7 @@ fn run_start(daemon: bool) -> Result<(), Box<dyn std::error::Error>> {
     let server_result = runtime.block_on(async {
         let config_path = PathBuf::from("config.yaml");
         let app_config = load_app_config(&config_path).await?;
-        let _logger_guard = logger::init_logger(&app_config.logging.level)?;
+        let _logger_guard = logger::init_logger(&app_config.logging.level, &app_config.logging.path)?;
 
         tracing::info!(log_path = %app_config.logging.path, "logger initialized");
 

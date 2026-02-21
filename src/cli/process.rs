@@ -71,7 +71,14 @@ pub fn prepare_start(daemon: bool) -> Result<(), ProcessError> {
 pub fn stop_process() -> Result<(), ProcessError> {
     let pid_path = pid_file_path()?;
     let pid = read_pid_file(&pid_path)?;
-    kill(Pid::from_raw(pid), Signal::SIGTERM)?;
+    match kill(Pid::from_raw(pid), Signal::SIGTERM) {
+        Ok(()) => {}
+        Err(error) => {
+            if error != nix::errno::Errno::ESRCH {
+                return Err(ProcessError::Nix(error));
+            }
+        }
+    }
     remove_pid_file_if_exists(&pid_path)?;
     Ok(())
 }
@@ -89,9 +96,19 @@ pub fn clear_pid_file() -> Result<(), ProcessError> {
     remove_pid_file_if_exists(&pid_path)
 }
 
-/// Returns true if PID file exists.
+/// Returns true when PID file exists and target process is alive.
 pub fn is_active() -> bool {
-    pid_file_path().map(|path| path.exists()).unwrap_or(false)
+    let pid_path = match pid_file_path() {
+        Ok(value) => value,
+        Err(_) => return false,
+    };
+
+    let pid = match read_pid_file(&pid_path) {
+        Ok(value) => value,
+        Err(_) => return false,
+    };
+
+    matches!(kill(Pid::from_raw(pid), None), Ok(()))
 }
 
 fn write_current_pid_file() -> Result<(), ProcessError> {

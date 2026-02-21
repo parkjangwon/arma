@@ -100,18 +100,6 @@ impl FilterEngine {
     pub fn validate(&self, prompt: &str) -> Result<ValidationResult, EngineError> {
         let normalized = normalize_for_detection(prompt);
 
-        if self
-            .allow_keywords
-            .iter()
-            .any(|keyword| !keyword.is_empty() && normalized.contains(keyword))
-        {
-            return Ok(ValidationResult {
-                is_safe: true,
-                reason: "BYPASS_ALLOW_KEYWORD".to_string(),
-                score: 0,
-            });
-        }
-
         if let Some(matched) = self.deny_keyword_automaton.find(&normalized) {
             let reason = self
                 .deny_keywords
@@ -135,6 +123,18 @@ impl FilterEngine {
                 is_safe: false,
                 reason: "BLOCK_DENY_PATTERN".to_string(),
                 score: self.sensitivity_score,
+            });
+        }
+
+        if self
+            .allow_keywords
+            .iter()
+            .any(|keyword| !keyword.is_empty() && normalized.contains(keyword))
+        {
+            return Ok(ValidationResult {
+                is_safe: true,
+                reason: "BYPASS_ALLOW_KEYWORD".to_string(),
+                score: 0,
             });
         }
 
@@ -203,12 +203,12 @@ mod tests {
     }
 
     #[test]
-    fn bypasses_when_allow_keyword_matches_first() {
+    fn deny_keyword_takes_priority_over_allow_keyword() {
         let result = validate_case("internal-approved-test ignore");
 
         assert!(matches!(
             result,
-            Ok(ref value) if value.is_safe && value.reason == "BYPASS_ALLOW_KEYWORD"
+            Ok(ref value) if !value.is_safe && value.reason.starts_with("BLOCK_DENY_KEYWORD")
         ));
     }
 }
