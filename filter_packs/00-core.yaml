@@ -67,6 +67,11 @@ deny_keywords:
   - "정책 우회"
   - "모더레이션 해제"
   - "내부 정보 출력"
+  - "프롬프트 원문 출력"
+  - "원문 출력"
+  - "verbatim prompt"
+  - "policy bypass sequence"
+  - "tool override"
 
 deny_patterns:
   - "(?i)ignore\\s+all\\s+previous\\s+instructions"
@@ -87,6 +92,8 @@ deny_patterns:
   - "(?i)(print|dump|show).*(env|environment|secrets?)"
   - "(?i)(cat|type)\\s+(/etc/passwd|~/.ssh|id_rsa|credentials?)"
   - "(?i)(return|output).*(raw|verbatim).*(prompt|instruction|system)"
+  - "(?i)(policy\\s*bypass\\s*sequence|tool\\s*override)"
+  - "(?i)(프롬프트|시스템|정책).*(원문|원본).*(출력|노출)"
 
 settings:
   sensitivity_score: 84
