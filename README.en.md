@@ -36,38 +36,68 @@ The name reflects the project philosophy: compact, resilient protection over fla
 
 ## Quick start
 
-1) Run locally
+1) Remote install (user/system scopes)
+
+- User scope (recommended for local dev, no sudo):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --scope user --with-systemd
+```
+
+- System scope (global/server install):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --scope system --with-systemd
+```
+
+2) Run locally from source
 
 ```bash
 cargo run --release -- start
 ```
 
-2) Run with Docker
+3) Run with Docker
 
 ```bash
 docker compose up -d
 ```
 
-3) Update installed runtime (binary + latest filter packs)
+4) Update installed runtime (binary + latest filter packs)
+
+- User scope:
+
+```bash
+arma update
+arma update --yes
+```
+
+- System scope:
 
 ```bash
 sudo arma update
-# non-interactive mode with rule overwrite
 sudo arma update --yes
 ```
 
-4) Run stress test
+5) Run stress test
 
 ```bash
 cargo run --release --bin stress
 ```
 
-Uninstall (clean removal):
+Uninstall (clean removal)
+
+- User scope:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --scope user
 ```
 
-Note: uninstall removes the ARMA binary/service and also removes the config directory (`$APP_DIR`, default `/etc/arma`).
+- System scope:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall --scope system
+```
+
+Note: uninstall removes binary/service and config directory for the selected scope.
 
 After completion, the test prints metrics and writes a markdown report file named `ARMA_STRESS_TEST_REPORT_YYYYMMDD_HHMMSS.md`.

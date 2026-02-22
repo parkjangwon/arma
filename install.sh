@@ -3,8 +3,9 @@ set -euo pipefail
 
 MODE="install"
 WITH_SYSTEMD=0
-PREFIX="/usr/local"
-APP_DIR="/etc/arma"
+SCOPE="auto"   # auto|system|user
+PREFIX=""
+APP_DIR=""
 BIN_NAME="arma"
 SERVICE_USER="arma"
 SERVICE_GROUP="arma"
@@ -20,6 +21,10 @@ while [[ $# -gt 0 ]]; do
     --with-systemd)
       WITH_SYSTEMD=1
       shift
+      ;;
+    --scope)
+      SCOPE="$2"
+      shift 2
       ;;
     --prefix)
       PREFIX="$2"
@@ -68,17 +73,47 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1"
-      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules]"
+      echo "Usage: ./install.sh [install|uninstall] [--scope auto|system|user] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules]"
       exit 1
       ;;
   esac
 done
 
+OS_NAME="$(uname -s | tr '[:upper:]' '[:lower:]')"
+
+if [[ "$SCOPE" == "auto" ]]; then
+  if [[ $EUID -eq 0 ]]; then
+    SCOPE="system"
+  else
+    SCOPE="user"
+  fi
+fi
+
+if [[ "$SCOPE" != "system" && "$SCOPE" != "user" ]]; then
+  echo "Invalid --scope: $SCOPE (use auto|system|user)"
+  exit 1
+fi
+
+if [[ -z "$PREFIX" ]]; then
+  if [[ "$SCOPE" == "system" ]]; then
+    PREFIX="/usr/local"
+  else
+    PREFIX="$HOME/.local"
+  fi
+fi
+
+if [[ -z "$APP_DIR" ]]; then
+  if [[ "$SCOPE" == "system" ]]; then
+    APP_DIR="/etc/arma"
+  else
+    APP_DIR="$HOME/.config/arma"
+  fi
+fi
+
 LIB_DIR="$PREFIX/lib/$BIN_NAME"
 BIN_DIR="$PREFIX/bin"
 TARGET_BIN="$LIB_DIR/$BIN_NAME"
 WRAPPER_BIN="$BIN_DIR/$BIN_NAME"
-OS_NAME="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -181,6 +216,32 @@ EOF
   echo "Run: sudo systemctl start arma"
 }
 
+install_systemd_user_service() {
+  local unit_dir="$HOME/.config/systemd/user"
+  local unit_path="$unit_dir/arma.service"
+  mkdir -p "$unit_dir"
+  cat > "$unit_path" <<EOF
+[Unit]
+Description=ARMA Prompt Guardrail Service (User)
+After=default.target
+
+[Service]
+Type=simple
+WorkingDirectory=$APP_DIR
+ExecStart=$WRAPPER_BIN start
+ExecReload=$WRAPPER_BIN reload
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
+EOF
+  systemctl --user daemon-reload
+  systemctl --user enable arma.service
+  echo "Installed user systemd unit: $unit_path"
+  echo "Run: systemctl --user start arma"
+}
+
 ensure_service_account() {
   if id -u "$SERVICE_USER" >/dev/null 2>&1; then
     return
@@ -280,9 +341,10 @@ install_binary() {
       echo "Dry run: local source build install"
       echo "Manifest path: $script_dir/Cargo.toml"
     fi
+    echo "Scope: $SCOPE"
     echo "Install prefix: $PREFIX"
     echo "App dir: $APP_DIR"
-    echo "Systemd: $WITH_SYSTEMD"
+    echo "Service install: $WITH_SYSTEMD"
     return
   fi
 
@@ -322,6 +384,16 @@ uninstall_systemd_service() {
   fi
 }
 
+uninstall_systemd_user_service() {
+  local unit_path="$HOME/.config/systemd/user/arma.service"
+  systemctl --user disable arma.service >/dev/null 2>&1 || true
+  systemctl --user stop arma.service >/dev/null 2>&1 || true
+  if [[ -f "$unit_path" ]]; then
+    rm -f "$unit_path"
+  fi
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
+}
+
 install_launchd_service() {
   local plist_path="/Library/LaunchDaemons/org.arma.service.plist"
   cat > "$plist_path" <<EOF
@@ -358,10 +430,54 @@ EOF
   echo "Run: sudo launchctl kickstart -k system/org.arma.service"
 }
 
+install_launchd_user_service() {
+  local plist_dir="$HOME/Library/LaunchAgents"
+  local plist_path="$plist_dir/org.arma.service.plist"
+  mkdir -p "$plist_dir"
+  cat > "$plist_path" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.arma.service</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$WRAPPER_BIN</string>
+    <string>start</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>$APP_DIR</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>$HOME/.local/state/arma/arma.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>$HOME/.local/state/arma/arma.err.log</string>
+</dict>
+</plist>
+EOF
+  launchctl bootout "gui/$UID" "$plist_path" >/dev/null 2>&1 || true
+  launchctl bootstrap "gui/$UID" "$plist_path"
+  launchctl enable "gui/$UID/org.arma.service" >/dev/null 2>&1 || true
+  echo "Installed user launchd unit: $plist_path"
+  echo "Run: launchctl kickstart -k gui/$UID/org.arma.service"
+}
+
 uninstall_launchd_service() {
   local plist_path="/Library/LaunchDaemons/org.arma.service.plist"
   if [[ -f "$plist_path" ]]; then
     launchctl bootout system "$plist_path" >/dev/null 2>&1 || true
+    rm -f "$plist_path"
+  fi
+}
+
+uninstall_launchd_user_service() {
+  local plist_path="$HOME/Library/LaunchAgents/org.arma.service.plist"
+  if [[ -f "$plist_path" ]]; then
+    launchctl bootout "gui/$UID" "$plist_path" >/dev/null 2>&1 || true
     rm -f "$plist_path"
   fi
 }
@@ -377,21 +493,29 @@ resolve_script_dir() {
 
 
 if [[ "$MODE" == "uninstall" ]]; then
-  if [[ $EUID -ne 0 ]]; then
-    echo "Please run uninstall as root (sudo)."
+  if [[ "$SCOPE" == "system" && $EUID -ne 0 ]]; then
+    echo "System scope uninstall requires root (sudo)."
     exit 1
   fi
 
   if [[ "$OS_NAME" == "darwin" ]]; then
-    uninstall_launchd_service
+    if [[ "$SCOPE" == "system" ]]; then
+      uninstall_launchd_service
+    else
+      uninstall_launchd_user_service
+    fi
   else
-    uninstall_systemd_service
+    if [[ "$SCOPE" == "system" ]]; then
+      uninstall_systemd_service
+    else
+      uninstall_systemd_user_service
+    fi
   fi
   rm -f "$WRAPPER_BIN"
   rm -f "$TARGET_BIN"
   rmdir "$LIB_DIR" >/dev/null 2>&1 || true
   rm -rf "$APP_DIR"
-  echo "Uninstalled ARMA binary/service and removed config directory: $APP_DIR"
+  echo "Uninstalled ARMA ($SCOPE scope) and removed config directory: $APP_DIR"
   exit 0
 fi
 
@@ -406,13 +530,15 @@ if [[ $DRY_RUN -eq 1 ]]; then
   exit 0
 fi
 
-if [[ $EUID -ne 0 ]]; then
-  echo "Please run install as root (sudo)."
+if [[ "$SCOPE" == "system" && $EUID -ne 0 ]]; then
+  echo "System scope install requires root (sudo)."
   exit 1
 fi
 
-
 mkdir -p "$LIB_DIR" "$BIN_DIR" "$APP_DIR"
+if [[ "$SCOPE" == "user" ]]; then
+  mkdir -p "$HOME/.local/state/arma"
+fi
 
 install_binary "$SCRIPT_DIR"
 write_wrapper
@@ -453,16 +579,25 @@ fi
 if [[ $WITH_SYSTEMD -eq 1 ]]; then
   if [[ "$OS_NAME" == "darwin" ]]; then
     require_cmd launchctl
-    install_launchd_service
+    if [[ "$SCOPE" == "system" ]]; then
+      install_launchd_service
+    else
+      install_launchd_user_service
+    fi
   else
     require_cmd systemctl
-    ensure_service_account
-    chown -R "$SERVICE_USER:$SERVICE_GROUP" "$APP_DIR"
-    install_systemd_service
+    if [[ "$SCOPE" == "system" ]]; then
+      ensure_service_account
+      chown -R "$SERVICE_USER:$SERVICE_GROUP" "$APP_DIR"
+      install_systemd_service
+    else
+      install_systemd_user_service
+    fi
   fi
 fi
 
 echo "Install complete."
+echo "Scope: $SCOPE"
 echo "Binary: $TARGET_BIN"
 echo "Wrapper: $WRAPPER_BIN"
 echo "Config: $APP_DIR/config.yaml"
