@@ -6,6 +6,13 @@ Ultra-high-performance AI prompt guardrail engine built in Rust.
 
 ARMA is a lightweight security gateway that validates prompts before they reach your LLM, blocking prompt-injection and evasion patterns with low latency.
 
+## Name and pronunciation
+
+- Pronunciation: **ARMA [ˈɑːr.mə]** ("AR-ma")
+- Naming origin: inspired by **armadillo**
+
+The name reflects the project philosophy: compact, resilient protection over flashy surface features.
+
 - Korean README: `README.md`
 - Development docs (KO/EN): `docs/DEVELOPMENT.md`, `docs/DEVELOPMENT.en.md`
 - Operations install guide (KO/EN): `docs/OPERATIONS.md`, `docs/OPERATIONS.en.md`

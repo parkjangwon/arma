@@ -6,6 +6,13 @@
 
 ARMA는 LLM 호출 이전 단계에서 입력 프롬프트를 고속 검사해 우회 공격을 차단하는 경량 보안 게이트입니다.
 
+## 이름과 발음
+
+- 발음: **ARMA [ˈɑːr.mə]**, 한국어로는 **아르마**
+- 네이밍 배경: **아르마딜로(armadillo)**에서 착안
+
+작고 단단한 보호막이라는 이미지를 가져와, "화려함보다 신뢰 가능한 보호 기능"을 우선하는 프로젝트 철학을 이름에 담았습니다.
+
 - English README: `README.en.md`
 - 개발 문서(한글/영문): `docs/DEVELOPMENT.md`, `docs/DEVELOPMENT.en.md`
 - 운영 설치 가이드(한글/영문): `docs/OPERATIONS.md`, `docs/OPERATIONS.en.md`
