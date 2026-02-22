@@ -76,6 +76,8 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 ```
 
 주의: 삭제는 해당 모드의 ARMA 바이너리/서비스와 설정 디렉토리를 함께 제거한다.
+- user 모드: `~/.local/state/arma` 로그 디렉토리도 함께 삭제
+- system 모드(macOS): `/var/log/arma.out.log`, `/var/log/arma.err.log`도 정리
 
 삭제 드라이런(무삭제 미리보기):
 

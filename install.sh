@@ -513,6 +513,13 @@ print_uninstall_plan() {
   echo "Target bin: $TARGET_BIN"
   echo "Lib dir: $LIB_DIR"
   echo "App dir: $APP_DIR"
+  if [[ "$mode_scope" == "user" ]]; then
+    echo "State dir: $HOME/.local/state/arma"
+  else
+    if [[ "$OS_NAME" == "darwin" ]]; then
+      echo "System logs: /var/log/arma.out.log, /var/log/arma.err.log"
+    fi
+  fi
 }
 
 
@@ -544,6 +551,15 @@ if [[ "$MODE" == "uninstall" ]]; then
   rm -f "$TARGET_BIN"
   rmdir "$LIB_DIR" >/dev/null 2>&1 || true
   rm -rf "$APP_DIR"
+
+  if [[ "$SCOPE" == "user" ]]; then
+    rm -rf "$HOME/.local/state/arma"
+  else
+    if [[ "$OS_NAME" == "darwin" ]]; then
+      rm -f /var/log/arma.out.log /var/log/arma.err.log >/dev/null 2>&1 || true
+    fi
+  fi
+
   echo "Uninstalled ARMA ($SCOPE scope) and removed config directory: $APP_DIR"
   exit 0
 fi

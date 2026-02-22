@@ -97,6 +97,8 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 ```
 
 Note: uninstall removes binary/service and config directory for the selected mode.
+- user mode: also removes `~/.local/state/arma` log directory
+- system mode on macOS: also cleans `/var/log/arma.out.log` and `/var/log/arma.err.log`
 
 Uninstall dry-run (preview, no deletion):
 
