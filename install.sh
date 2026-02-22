@@ -14,7 +14,6 @@ TAG=""
 DRY_RUN=0
 UPDATE_RULES=0
 OVERWRITE_RULES=0
-CLEAN_INSTALL=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -59,10 +58,6 @@ while [[ $# -gt 0 ]]; do
       OVERWRITE_RULES=1
       shift
       ;;
-    --remove|--clean)
-      CLEAN_INSTALL=1
-      shift
-      ;;
     uninstall)
       MODE="uninstall"
       shift
@@ -73,7 +68,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1"
-      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules] [--remove]"
+      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules]"
       exit 1
       ;;
   esac
@@ -288,7 +283,6 @@ install_binary() {
     echo "Install prefix: $PREFIX"
     echo "App dir: $APP_DIR"
     echo "Systemd: $WITH_SYSTEMD"
-    echo "Remove mode: $CLEAN_INSTALL"
     return
   fi
 
@@ -381,18 +375,6 @@ resolve_script_dir() {
   fi
 }
 
-perform_clean_install_purge() {
-  echo "Remove mode requested: purging existing ARMA runtime/config before install..."
-  if [[ "$OS_NAME" == "darwin" ]]; then
-    uninstall_launchd_service
-  else
-    uninstall_systemd_service
-  fi
-
-  rm -f "$WRAPPER_BIN" "$TARGET_BIN"
-  rm -rf "$LIB_DIR"
-  rm -rf "$APP_DIR"
-}
 
 if [[ "$MODE" == "uninstall" ]]; then
   if [[ $EUID -ne 0 ]]; then
@@ -408,8 +390,8 @@ if [[ "$MODE" == "uninstall" ]]; then
   rm -f "$WRAPPER_BIN"
   rm -f "$TARGET_BIN"
   rmdir "$LIB_DIR" >/dev/null 2>&1 || true
-  echo "Uninstalled ARMA binary and wrapper."
-  echo "Config directory kept: $APP_DIR"
+  rm -rf "$APP_DIR"
+  echo "Uninstalled ARMA binary/service and removed config directory: $APP_DIR"
   exit 0
 fi
 
@@ -429,9 +411,6 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-if [[ $CLEAN_INSTALL -eq 1 ]]; then
-  perform_clean_install_purge
-fi
 
 mkdir -p "$LIB_DIR" "$BIN_DIR" "$APP_DIR"
 
