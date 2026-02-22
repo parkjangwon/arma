@@ -15,59 +15,98 @@
 
 ## 2. 서비스 라이프사이클
 
-### 2.0 install.sh 기반 설치 (권장)
+### 2.0 설치 모드 상세 (user / system)
 
-`install.sh`는 **ARMA 소스코드 루트 디렉토리에서 실행**하는 것을 기본으로 설계되어 있습니다.
+ARMA는 설치 시 실행 권한을 기준으로 모드를 자동 선택한다.
 
-```bash
-cd /path/to/arma
-sudo ./install.sh --with-systemd
-```
+- 일반 계정(`bash`) 실행: user 모드
+- 관리자 계정(`sudo bash`) 실행: system 모드
 
-이 스크립트는 소스 트리의 `Cargo.toml`, `config.yaml`, `filter_packs/`를 참조해 빌드/설치를 수행합니다.
+운영 차이:
+- user 모드
+  - 서비스 제어: Linux `systemctl --user`, macOS `launchctl`(LaunchAgents)
+  - 파일 경로: `~/.local`, `~/.config/arma`
+  - 로그/상태 조회: sudo 불필요
+- system 모드
+  - 서비스 제어: Linux `systemctl`, macOS LaunchDaemons
+  - 파일 경로: `/usr/local`, `/etc/arma`
+  - 로그/상태 조회: sudo 필요
 
-소스 트리 없이 원라인 설치가 필요한 경우(예: 운영 서버 직접 배포), 릴리스 바이너리 URL을 사용해 설치할 수 있습니다.
+권장 정책:
+- 개인 개발/단일 운영자: user 모드
+- 서버 공용 운영/다중 사용자: system 모드
 
-```bash
-curl -fsSL <INSTALL_SCRIPT_URL> | sudo bash -s -- --binary-url <DIRECT_BINARY_URL> --with-systemd
-```
-
-`--binary-url`이 없으면 로컬 소스(`Cargo.toml`) 기준 빌드 설치를 시도합니다.
-
-필터팩 갱신 옵션:
-- `--update-rules`: 최신 필터팩 동기화 수행
-- `--overwrite-rules`: 기존 YAML을 덮어쓰며 동기화
-
-GitHub 릴리즈 기반 원라인 설치(`install.sh`)도 지원합니다.
-
-- 예시:
+기본 설치 명령:
 
 ```bash
+# user 모드 (권장)
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --with-systemd
+
+# system 모드
 curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
 ```
 
-- 설치 전 드라이런:
+삭제 명령:
+
+```bash
+# user 모드 삭제
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall
+
+# system 모드 삭제
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall
+```
+
+
+### 2.1 install.sh 설치/운영 절차 (상세)
+
+소스 트리에서 직접 설치할 수도 있고, 원라인 설치도 가능하다.
+
+```bash
+cd /path/to/arma
+# 일반 계정(user 모드)
+./install.sh --with-systemd
+
+# 시스템 전역(system 모드)
+sudo ./install.sh --with-systemd
+```
+
+원라인 설치:
+
+```bash
+# user 모드
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --with-systemd
+
+# system 모드
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
+```
+
+드라이런:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --dry-run --with-systemd
 ```
 
-- 설치 결과
-  - 바이너리: `/usr/local/lib/arma/arma`
-  - 전역 명령어 래퍼: `/usr/local/bin/arma`
-  - 운영 설정/룰셋: `/etc/arma/config.yaml`, `/etc/arma/filter_packs/`
-- systemd 옵션 사용 시
-  - 전용 계정(`arma`)으로 서비스 실행
-  - 하드닝 옵션 적용(`NoNewPrivileges`, `ProtectSystem` 등)
+모드별 대표 경로:
+- user 모드: `~/.local/lib/arma`, `~/.local/bin/arma`, `~/.config/arma`
+- system 모드: `/usr/local/lib/arma`, `/usr/local/bin/arma`, `/etc/arma`
 
-### 2.1 로컬/바이너리 운영
+모드별 운영 명령:
 
 ```bash
+# user 모드
 arma start
 arma stop
 arma restart
 arma reload
 arma status
+arma update
+
+# system 모드
+sudo arma start
+sudo arma stop
+sudo arma restart
+sudo arma reload
+sudo arma status
 sudo arma update
 ```
 

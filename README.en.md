@@ -36,18 +36,27 @@ The name reflects the project philosophy: compact, resilient protection over fla
 
 ## Quick start
 
-1) Remote install (user/system scopes)
+1) Remote install (auto mode by privilege)
 
-- User scope (recommended for local dev, no sudo):
+- Run with `bash` (non-root): installs in user mode
+- Run with `sudo bash` (root): installs in system mode
+
+User-mode install (recommended, no sudo):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --scope user --with-systemd
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --with-systemd
 ```
 
-- System scope (global/server install):
+System-mode install (global/server):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --scope system --with-systemd
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
+```
+
+Dry run before install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --dry-run --with-systemd
 ```
 
 2) Run locally from source
@@ -64,19 +73,8 @@ docker compose up -d
 
 4) Update installed runtime (binary + latest filter packs)
 
-- User scope:
-
-```bash
-arma update
-arma update --yes
-```
-
-- System scope:
-
-```bash
-sudo arma update
-sudo arma update --yes
-```
+- user mode: `arma update` / `arma update --yes`
+- system mode: `sudo arma update` / `sudo arma update --yes`
 
 5) Run stress test
 
@@ -86,18 +84,20 @@ cargo run --release --bin stress
 
 Uninstall (clean removal)
 
-- User scope:
+- user-mode uninstall:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --scope user
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall
 ```
 
-- System scope:
+- system-mode uninstall:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall --scope system
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall
 ```
 
-Note: uninstall removes binary/service and config directory for the selected scope.
+Note: uninstall removes binary/service and config directory for the selected mode.
+
+Advanced option (explicit mode): `--scope user|system`
 
 After completion, the test prints metrics and writes a markdown report file named `ARMA_STRESS_TEST_REPORT_YYYYMMDD_HHMMSS.md`.

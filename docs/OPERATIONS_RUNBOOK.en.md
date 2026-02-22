@@ -15,57 +15,98 @@ This runbook helps operators safely start/stop/restart ARMA, customize rules, an
 
 ## 2. Service lifecycle
 
-### 2.0 install.sh-based installation (recommended)
+### 2.0 Installation mode details (user / system)
 
-`install.sh` is designed to run from the **ARMA source repository root directory**.
+ARMA auto-selects install mode by privilege at runtime.
 
-```bash
-cd /path/to/arma
-sudo ./install.sh --with-systemd
-```
+- Run with `bash` (non-root): user mode
+- Run with `sudo bash` (root): system mode
 
-The script reads `Cargo.toml`, `config.yaml`, and `filter_packs/` from the source tree to build and install ARMA.
+Operational differences:
+- user mode
+  - service control: Linux `systemctl --user`, macOS `launchctl` (LaunchAgents)
+  - paths: `~/.local`, `~/.config/arma`
+  - logs/status: no sudo required
+- system mode
+  - service control: Linux `systemctl`, macOS LaunchDaemons
+  - paths: `/usr/local`, `/etc/arma`
+  - logs/status: sudo required
 
-If you need one-line installation without local source tree (for production servers), use release binary mode.
+Recommended policy:
+- local dev / single operator: user mode
+- shared production servers: system mode
 
-```bash
-curl -fsSL <INSTALL_SCRIPT_URL> | sudo bash -s -- --binary-url <DIRECT_BINARY_URL> --with-systemd
-```
-
-`install.sh` also supports GitHub release-based one-line installation.
-
-Filter-pack sync options:
-- `--update-rules`: sync latest filter packs
-- `--overwrite-rules`: sync with overwrite of existing YAML files
-
-- Example:
+Install commands:
 
 ```bash
+# user mode (recommended)
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --with-systemd
+
+# system mode
 curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
 ```
 
-- Dry run before install:
+Uninstall commands:
+
+```bash
+# user mode uninstall
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall
+
+# system mode uninstall
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall
+```
+
+
+### 2.1 install.sh installation/operations (detailed)
+
+You can install from a local source tree or via one-line remote install.
+
+```bash
+cd /path/to/arma
+# user mode
+./install.sh --with-systemd
+
+# system mode
+sudo ./install.sh --with-systemd
+```
+
+One-line install:
+
+```bash
+# user mode
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --with-systemd
+
+# system mode
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd
+```
+
+Dry run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- --dry-run --with-systemd
 ```
 
-- Installation outputs
-  - binary: `/usr/local/lib/arma/arma`
-  - global wrapper command: `/usr/local/bin/arma`
-  - runtime config/rules: `/etc/arma/config.yaml`, `/etc/arma/filter_packs/`
-- With systemd option
-  - service runs as dedicated user (`arma`)
-  - hardening options enabled (`NoNewPrivileges`, `ProtectSystem`, etc.)
+Mode-specific paths:
+- user mode: `~/.local/lib/arma`, `~/.local/bin/arma`, `~/.config/arma`
+- system mode: `/usr/local/lib/arma`, `/usr/local/bin/arma`, `/etc/arma`
 
-### 2.1 Local/binary operations
+Mode-specific runtime commands:
 
 ```bash
+# user mode
 arma start
 arma stop
 arma restart
 arma reload
 arma status
+arma update
+
+# system mode
+sudo arma start
+sudo arma stop
+sudo arma restart
+sudo arma reload
+sudo arma status
 sudo arma update
 ```
 
