@@ -56,6 +56,14 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 arma status
 ```
 
+완전 초기화 후 재설치(클린 설치):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd --clean
+```
+
+주의: `--clean`은 기존 ARMA 바이너리/서비스/설정 디렉토리(`$APP_DIR`, 기본 `/etc/arma`)를 삭제한다.
+
 업데이트(바이너리 + 필터팩 최신화):
 
 ```bash
