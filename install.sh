@@ -59,7 +59,7 @@ while [[ $# -gt 0 ]]; do
       OVERWRITE_RULES=1
       shift
       ;;
-    --clean)
+    --remove|--clean)
       CLEAN_INSTALL=1
       shift
       ;;
@@ -73,7 +73,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown argument: $1"
-      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules] [--clean]"
+      echo "Usage: ./install.sh [install|uninstall] [--with-systemd] [--prefix PATH] [--app-dir PATH] [--service-user USER] [--binary-url URL] [--repo OWNER/REPO] [--tag TAG] [--dry-run] [--update-rules] [--overwrite-rules] [--remove]"
       exit 1
       ;;
   esac
@@ -288,7 +288,7 @@ install_binary() {
     echo "Install prefix: $PREFIX"
     echo "App dir: $APP_DIR"
     echo "Systemd: $WITH_SYSTEMD"
-    echo "Clean install: $CLEAN_INSTALL"
+    echo "Remove mode: $CLEAN_INSTALL"
     return
   fi
 
@@ -382,7 +382,7 @@ resolve_script_dir() {
 }
 
 perform_clean_install_purge() {
-  echo "Clean install requested: purging existing ARMA runtime/config..."
+  echo "Remove mode requested: purging existing ARMA runtime/config before install..."
   if [[ "$OS_NAME" == "darwin" ]]; then
     uninstall_launchd_service
   else

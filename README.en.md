@@ -65,9 +65,9 @@ cargo run --release --bin stress
 Clean reinstall (purge previous runtime/config first):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd --clean
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- --with-systemd --remove
 ```
 
-Note: `--clean` removes existing ARMA binary/service and the config directory (`$APP_DIR`, default `/etc/arma`).
+Note: `--remove` removes existing ARMA binary/service and the config directory (`$APP_DIR`, default `/etc/arma`).
 
 After completion, the test prints metrics and writes a markdown report file named `ARMA_STRESS_TEST_REPORT_YYYYMMDD_HHMMSS.md`.
