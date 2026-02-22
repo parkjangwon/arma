@@ -492,7 +492,36 @@ resolve_script_dir() {
 }
 
 
+print_uninstall_plan() {
+  local mode_scope="$1"
+  echo "[Dry-run] ARMA uninstall plan"
+  echo "Scope: $mode_scope"
+  if [[ "$OS_NAME" == "darwin" ]]; then
+    if [[ "$mode_scope" == "system" ]]; then
+      echo "Service plist: /Library/LaunchDaemons/org.arma.service.plist"
+    else
+      echo "Service plist: $HOME/Library/LaunchAgents/org.arma.service.plist"
+    fi
+  else
+    if [[ "$mode_scope" == "system" ]]; then
+      echo "Service unit: /etc/systemd/system/arma.service"
+    else
+      echo "Service unit: $HOME/.config/systemd/user/arma.service"
+    fi
+  fi
+  echo "Wrapper bin: $WRAPPER_BIN"
+  echo "Target bin: $TARGET_BIN"
+  echo "Lib dir: $LIB_DIR"
+  echo "App dir: $APP_DIR"
+}
+
+
 if [[ "$MODE" == "uninstall" ]]; then
+  if [[ $DRY_RUN -eq 1 ]]; then
+    print_uninstall_plan "$SCOPE"
+    exit 0
+  fi
+
   if [[ "$SCOPE" == "system" && $EUID -ne 0 ]]; then
     echo "System scope uninstall requires root (sudo)."
     exit 1

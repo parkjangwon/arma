@@ -56,6 +56,16 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall
 ```
 
+삭제 전 미리보기(드라이런):
+
+```bash
+# user 모드
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run
+
+# system 모드
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run --scope system
+```
+
 
 ### 2.1 install.sh 설치/운영 절차 (상세)
 

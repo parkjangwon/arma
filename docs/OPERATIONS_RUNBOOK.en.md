@@ -56,6 +56,16 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | sudo bash -s -- uninstall
 ```
 
+Uninstall preview (dry-run):
+
+```bash
+# user mode
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run
+
+# system mode
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run --scope system
+```
+
 
 ### 2.1 install.sh installation/operations (detailed)
 

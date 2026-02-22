@@ -77,6 +77,16 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 
 주의: 삭제는 해당 모드의 ARMA 바이너리/서비스와 설정 디렉토리를 함께 제거한다.
 
+삭제 드라이런(무삭제 미리보기):
+
+```bash
+# user 모드
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run
+
+# system 모드
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run --scope system
+```
+
 고급 옵션(명시적 모드 지정): `--scope user|system`
 
 업데이트(바이너리 + 필터팩 최신화)

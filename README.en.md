@@ -98,6 +98,16 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 
 Note: uninstall removes binary/service and config directory for the selected mode.
 
+Uninstall dry-run (preview, no deletion):
+
+```bash
+# user mode
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run
+
+# system mode
+curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | bash -s -- uninstall --dry-run --scope system
+```
+
 Advanced option (explicit mode): `--scope user|system`
 
 After completion, the test prints metrics and writes a markdown report file named `ARMA_STRESS_TEST_REPORT_YYYYMMDD_HHMMSS.md`.
