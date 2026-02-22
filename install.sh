@@ -78,6 +78,7 @@ LIB_DIR="$PREFIX/lib/$BIN_NAME"
 BIN_DIR="$PREFIX/bin"
 TARGET_BIN="$LIB_DIR/$BIN_NAME"
 WRAPPER_BIN="$BIN_DIR/$BIN_NAME"
+OS_NAME="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -321,13 +322,70 @@ uninstall_systemd_service() {
   fi
 }
 
+install_launchd_service() {
+  local plist_path="/Library/LaunchDaemons/org.arma.service.plist"
+  cat > "$plist_path" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.arma.service</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$WRAPPER_BIN</string>
+    <string>start</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>$APP_DIR</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/var/log/arma.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/var/log/arma.err.log</string>
+</dict>
+</plist>
+EOF
+  chown root:wheel "$plist_path"
+  chmod 644 "$plist_path"
+  launchctl bootout system "$plist_path" >/dev/null 2>&1 || true
+  launchctl bootstrap system "$plist_path"
+  launchctl enable system/org.arma.service >/dev/null 2>&1 || true
+  echo "Installed launchd unit: $plist_path"
+  echo "Run: sudo launchctl kickstart -k system/org.arma.service"
+}
+
+uninstall_launchd_service() {
+  local plist_path="/Library/LaunchDaemons/org.arma.service.plist"
+  if [[ -f "$plist_path" ]]; then
+    launchctl bootout system "$plist_path" >/dev/null 2>&1 || true
+    rm -f "$plist_path"
+  fi
+}
+
+resolve_script_dir() {
+  local source_path="${BASH_SOURCE[0]-}"
+  if [[ -n "$source_path" && "$source_path" != "bash" && -f "$source_path" ]]; then
+    (cd "$(dirname "$source_path")" && pwd)
+  else
+    echo ""
+  fi
+}
+
 if [[ "$MODE" == "uninstall" ]]; then
   if [[ $EUID -ne 0 ]]; then
     echo "Please run uninstall as root (sudo)."
     exit 1
   fi
 
-  uninstall_systemd_service
+  if [[ "$OS_NAME" == "darwin" ]]; then
+    uninstall_launchd_service
+  else
+    uninstall_systemd_service
+  fi
   rm -f "$WRAPPER_BIN"
   rm -f "$TARGET_BIN"
   rmdir "$LIB_DIR" >/dev/null 2>&1 || true
@@ -336,7 +394,7 @@ if [[ "$MODE" == "uninstall" ]]; then
   exit 0
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(resolve_script_dir)"
 EFFECTIVE_TAG="$(resolve_effective_tag)"
 TAG="$EFFECTIVE_TAG"
 
@@ -391,10 +449,15 @@ if [[ $UPDATE_RULES -eq 1 ]]; then
 fi
 
 if [[ $WITH_SYSTEMD -eq 1 ]]; then
-  require_cmd systemctl
-  ensure_service_account
-  chown -R "$SERVICE_USER:$SERVICE_GROUP" "$APP_DIR"
-  install_systemd_service
+  if [[ "$OS_NAME" == "darwin" ]]; then
+    require_cmd launchctl
+    install_launchd_service
+  else
+    require_cmd systemctl
+    ensure_service_account
+    chown -R "$SERVICE_USER:$SERVICE_GROUP" "$APP_DIR"
+    install_systemd_service
+  fi
 fi
 
 echo "Install complete."
