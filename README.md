@@ -25,7 +25,8 @@ ARMA는 LLM 호출 이전 단계에서 입력 프롬프트를 고속 검사해 �
 - **고성능 필터링**: Aho-Corasick + Regex 기반 다계층 검사
 - **정규화 방어**: NFC/소문자화/공백·구두점 제거로 우회 입력 방어
 - **무중단 Hot-reload**: 디렉토리 기반 룰셋 병합 후 RwLock 스왑
-- **운영 친화성**: CLI 라이프사이클(start/stop/reload/status/update), JSON 로깅, Docker/Compose 지원
+- **Native-first 운영**: 독립 실행 바이너리 + systemd/launchd 기반 라이프사이클
+- **컨테이너 지원**: Docker/Compose는 선택적 배포 방식으로 제공
 
 ## 시스템 구성 요약
 
@@ -34,9 +35,25 @@ ARMA는 LLM 호출 이전 단계에서 입력 프롬프트를 고속 검사해 �
 - Engine 상태 공유: `Arc<RwLock<FilterEngine>>`
 - 시그널 처리: SIGTERM graceful shutdown, SIGHUP manual reload
 
+## 배포 철학
+
+ARMA는 **Native-first**를 지향합니다.
+
+작고 빠른 Rust 바이너리 하나로 LLM 앞단의 보안 게이트를 구성하고, 운영 환경에서는 OS의 서비스 매니저(systemd/launchd)와 함께 가볍게 실행하도록 설계했습니다.
+
+- **Native Binary** — 권장 배포 방식
+- **Docker / Compose** — 컨테이너 환경을 위한 선택적 배포 방식
+- **Source Build** — 개발 및 커스터마이징
+
+Docker는 ARMA의 필수 런타임이 아닙니다. 일반적인 서버 배포에서는 독립 실행 바이너리를 직접 실행하는 방식을 권장합니다.
+
 ## 설치 가이드 (권장 순서)
 
-### 1) 원격 설치 (가장 빠른 시작)
+### 1) Native Binary 설치 (권장)
+
+지원되는 플랫폼의 최신 바이너리를 자동으로 내려받아 설치합니다.
+
+### 원격 설치 (가장 빠른 시작)
 
 기본 동작은 **실행 권한 자동 판별**이다.
 
@@ -110,7 +127,9 @@ sudo ./install.sh --with-systemd
 cargo run --release -- start
 ```
 
-### 3) 로컬 Docker 설치
+### 3) Docker / Compose 설치 (선택)
+
+컨테이너 환경에서 실행하려는 경우 사용합니다.
 
 ```bash
 docker compose build

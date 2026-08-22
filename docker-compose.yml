@@ -1,14 +1,13 @@
 services:
   arma:
-    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - ./config.yaml:/app/config.yaml
-      - ./filter_packs:/app/filter_packs
+      - ./config.yaml:/app/config.yaml:ro
+      - ./filter_packs:/app/filter_packs:ro
     logging:
       driver: "json-file"
       options:

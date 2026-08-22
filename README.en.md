@@ -25,7 +25,8 @@ The name reflects the project philosophy: compact, resilient protection over fla
 - **High-speed filtering**: Aho-Corasick + Regex multi-layer checks
 - **Normalization defense**: NFC + lowercase + whitespace/punctuation stripping
 - **Zero-downtime hot reload**: directory-based rule merge with RwLock swap
-- **Ops-ready runtime**: CLI lifecycle (start/stop/reload/status/update), JSON logging, Docker/Compose support
+- **Native-first operations**: standalone binary with systemd/launchd lifecycle management
+- **Container support**: Docker/Compose available as an optional deployment method
 
 ## Architecture at a glance
 
@@ -34,9 +35,25 @@ The name reflects the project philosophy: compact, resilient protection over fla
 - Shared engine state: `Arc<RwLock<FilterEngine>>`
 - Signals: SIGTERM graceful shutdown, SIGHUP manual reload
 
+## Deployment Philosophy
+
+ARMA is **Native-first**.
+
+It is designed to run as a small, fast Rust binary in front of LLM applications, with OS service managers such as systemd or launchd handling production lifecycle management.
+
+- **Native Binary** — recommended deployment method
+- **Docker / Compose** — optional deployment method for container environments
+- **Source Build** — for development and customization
+
+Docker is not required to run ARMA. For general server deployments, running the standalone binary directly is recommended.
+
 ## Quick start
 
-1) Remote install (auto mode by privilege)
+### 1) Native Binary (Recommended)
+
+Download and install the latest binary for the detected platform.
+
+#### Remote install (fastest start)
 
 - Run with `bash` (non-root): installs in user mode
 - Run with `sudo bash` (root): installs in system mode
@@ -65,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/parkjangwon/arma/main/install.sh | 
 cargo run --release -- start
 ```
 
-3) Run with Docker
+3) Run with Docker / Compose (Optional)
 
 ```bash
 docker compose up -d

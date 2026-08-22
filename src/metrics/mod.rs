@@ -8,8 +8,8 @@ pub struct MetricsSnapshot {
     pub pass_count: u64,
     pub block_count: u64,
     pub block_rate: f64,
-    pub latency_p50_ms: u128,
-    pub latency_p95_ms: u128,
+    pub latency_p50_us: u64,
+    pub latency_p95_us: u64,
     pub top_block_reasons: Vec<ReasonHit>,
 }
 
@@ -24,7 +24,7 @@ struct MetricsState {
     pass_count: u64,
     block_count: u64,
     block_reasons: HashMap<String, u64>,
-    latencies_ms: VecDeque<u128>,
+    latencies_us: VecDeque<u64>,
 }
 
 #[derive(Debug)]
@@ -40,14 +40,14 @@ impl RuntimeMetrics {
                 pass_count: 0,
                 block_count: 0,
                 block_reasons: HashMap::new(),
-                latencies_ms: VecDeque::with_capacity(latency_window_size),
+                latencies_us: VecDeque::with_capacity(latency_window_size),
             }),
             latency_window_size,
         }
     }
 
-    pub fn record_validation(&self, is_safe: bool, reason: &str, latency_ms: u128) {
-        let mut guard = self.state.lock().expect("metrics mutex poisoned");
+    pub fn record_validation(&self, is_safe: bool, reason: &str, latency_us: u64) {
+        let mut guard = self.state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 
         if is_safe {
             guard.pass_count += 1;
@@ -56,14 +56,14 @@ impl RuntimeMetrics {
             *guard.block_reasons.entry(reason.to_string()).or_insert(0) += 1;
         }
 
-        guard.latencies_ms.push_back(latency_ms);
-        while guard.latencies_ms.len() > self.latency_window_size {
-            guard.latencies_ms.pop_front();
+        guard.latencies_us.push_back(latency_us);
+        while guard.latencies_us.len() > self.latency_window_size {
+            guard.latencies_us.pop_front();
         }
     }
 
     pub fn snapshot(&self) -> MetricsSnapshot {
-        let guard = self.state.lock().expect("metrics mutex poisoned");
+        let guard = self.state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 
         let total_requests = guard.pass_count + guard.block_count;
         let block_rate = if total_requests == 0 {
@@ -83,7 +83,7 @@ impl RuntimeMetrics {
         sorted_reasons.sort_by_key(|hit| Reverse(hit.count));
         sorted_reasons.truncate(5);
 
-        let mut samples = guard.latencies_ms.iter().copied().collect::<Vec<_>>();
+        let mut samples = guard.latencies_us.iter().copied().collect::<Vec<_>>();
         samples.sort_unstable();
 
         MetricsSnapshot {
@@ -91,14 +91,14 @@ impl RuntimeMetrics {
             pass_count: guard.pass_count,
             block_count: guard.block_count,
             block_rate,
-            latency_p50_ms: percentile(&samples, 0.50),
-            latency_p95_ms: percentile(&samples, 0.95),
+            latency_p50_us: percentile(&samples, 0.50),
+            latency_p95_us: percentile(&samples, 0.95),
             top_block_reasons: sorted_reasons,
         }
     }
 }
 
-fn percentile(sorted_values: &[u128], ratio: f64) -> u128 {
+fn percentile(sorted_values: &[u64], ratio: f64) -> u64 {
     if sorted_values.is_empty() {
         return 0;
     }
@@ -115,9 +115,9 @@ mod tests {
     #[test]
     fn records_counts_and_block_reasons() {
         let metrics = RuntimeMetrics::new(64);
-        metrics.record_validation(true, "PASS", 5);
-        metrics.record_validation(false, "BLOCK_DENY_PATTERN", 8);
-        metrics.record_validation(false, "BLOCK_DENY_PATTERN", 10);
+        metrics.record_validation(true, "PASS", 5_000);
+        metrics.record_validation(false, "BLOCK_DENY_PATTERN", 8_000);
+        metrics.record_validation(false, "BLOCK_DENY_PATTERN", 10_000);
 
         let snapshot = metrics.snapshot();
         assert_eq!(snapshot.total_requests, 3);
@@ -131,13 +131,13 @@ mod tests {
     #[test]
     fn calculates_latency_percentiles_from_recent_window() {
         let metrics = RuntimeMetrics::new(4);
-        for value in [10_u128, 20, 30, 40, 100] {
+        for value in [10_u64, 20, 30, 40, 100] {
             metrics.record_validation(true, "PASS", value);
         }
 
         let snapshot = metrics.snapshot();
         // 10 is out due to window limit, samples become [20,30,40,100]
-        assert_eq!(snapshot.latency_p50_ms, 30);
-        assert_eq!(snapshot.latency_p95_ms, 100);
+        assert_eq!(snapshot.latency_p50_us, 30);
+        assert_eq!(snapshot.latency_p95_us, 100);
     }
 }

@@ -44,9 +44,10 @@ ARMA는 LLM 요청 전 프롬프트를 검사하는 게이트웨이입니다.
 필드 설명:
 
 - `is_safe`: 안전 여부
-- `reason`: 판단 근거 (`PASS`, `BLOCK_DENY_KEYWORD:*`, `BLOCK_DENY_PATTERN`, `BYPASS_ALLOW_KEYWORD`, `ENGINE_ERROR_BYPASS`)
+- `reason`: 판단 근거 (`PASS`, `BLOCK_DENY_KEYWORD:*`, `BLOCK_DENY_PATTERN`, `BYPASS_ALLOW_KEYWORD`, `ENGINE_ERROR_BLOCK`)
 - `score`: 차단 점수
 - `latency_ms`: ARMA 처리 시간(ms)
+- `latency_us`: ARMA 처리 시간(µs), 정밀 latency 측정용
 
 ### 2.2 `GET /health`
 
@@ -64,6 +65,8 @@ ARMA는 LLM 요청 전 프롬프트를 검사하는 게이트웨이입니다.
   "block_rate": 0.25,
   "latency_p50_ms": 2,
   "latency_p95_ms": 5,
+  "latency_p50_us": 2300,
+  "latency_p95_us": 4800,
   "top_block_reasons": [
     {
       "reason": "BLOCK_DENY_PATTERN",
@@ -117,3 +120,9 @@ ARMA는 LLM 요청 전 프롬프트를 검사하는 게이트웨이입니다.
 - `reason`/`score` 기반 대시보드 구성
 - `BLOCK` 비율 급증 시 룰셋 변경 이력 동시 확인
 - 배포 전 스테이징에서 정상/악성 샘플 회귀 테스트 수행
+
+### Allow keyword semantics
+
+`allow_keywords`는 더 긴 문장 안의 부분 문자열을 허용하지 않습니다. 정규화된 전체 prompt가 allow keyword와 정확히 일치할 때만 `BYPASS_ALLOW_KEYWORD`가 적용됩니다. 이는 짧은 allow keyword가 의도하지 않은 prompt까지 우회시키는 보안 문제를 방지합니다.
+
+또한 엔진이 판단할 수 없는 내부 오류가 발생하면 `ENGINE_ERROR_BLOCK`으로 fail-closed 처리합니다.

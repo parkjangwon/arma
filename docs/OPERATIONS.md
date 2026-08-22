@@ -133,7 +133,7 @@ sudo arma update
 curl -s http://127.0.0.1:8080/health
 ```
 
-`/health`에는 `filter_pack_version` 외에 `total_requests`, `block_rate`, `latency_p95_ms`, `top_block_reasons`가 포함되어 운영 상태를 빠르게 점검할 수 있습니다.
+`/health`에는 `filter_pack_version` 외에 `total_requests`, `block_rate`, `latency_p95_ms`, `latency_p50_us`, `latency_p95_us`, `top_block_reasons`가 포함되어 운영 상태를 빠르게 점검할 수 있습니다.
 
 ## 4. Docker 설치/운영
 

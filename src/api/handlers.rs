@@ -30,6 +30,7 @@ pub struct ValidateResponse {
     pub reason: String,
     pub score: u32,
     pub latency_ms: u128,
+    pub latency_us: u64,
 }
 
 /// Health response payload.
@@ -41,8 +42,10 @@ pub struct HealthResponse {
     pub pass_count: u64,
     pub block_count: u64,
     pub block_rate: f64,
-    pub latency_p50_ms: u128,
-    pub latency_p95_ms: u128,
+    pub latency_p50_ms: u64,
+    pub latency_p95_ms: u64,
+    pub latency_p50_us: u64,
+    pub latency_p95_us: u64,
     pub top_block_reasons: Vec<ReasonHit>,
 }
 
@@ -60,7 +63,8 @@ pub async fn validate_prompt(
 
     match result {
         Ok(validation) => {
-            let latency_ms = started.elapsed().as_millis();
+            let latency_us = started.elapsed().as_micros().min(u64::MAX as u128) as u64;
+            let latency_ms = (latency_us / 1_000) as u128;
             let action = if validation.is_safe { "PASS" } else { "BLOCK" };
             let matched_keyword = extract_matched_keyword(&validation.reason);
 
@@ -76,7 +80,7 @@ pub async fn validate_prompt(
 
             state
                 .metrics
-                .record_validation(validation.is_safe, &validation.reason, latency_ms);
+                .record_validation(validation.is_safe, &validation.reason, latency_us);
 
             (
                 StatusCode::OK,
@@ -85,23 +89,27 @@ pub async fn validate_prompt(
                     reason: validation.reason,
                     score: validation.score,
                     latency_ms,
+                    latency_us,
                 }),
             )
                 .into_response()
         }
         Err(error) => {
             tracing::error!(error = %error, "prompt validation failed");
-            let latency_ms = started.elapsed().as_millis();
+            let latency_us = started.elapsed().as_micros().min(u64::MAX as u128) as u64;
+            let latency_ms = (latency_us / 1_000) as u128;
+            // A security gateway must fail closed if the engine cannot make a decision.
             state
                 .metrics
-                .record_validation(true, "ENGINE_ERROR_BYPASS", latency_ms);
+                .record_validation(false, "ENGINE_ERROR_BLOCK", latency_us);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ValidateResponse {
-                    is_safe: true,
-                    reason: "ENGINE_ERROR_BYPASS".to_string(),
+                    is_safe: false,
+                    reason: "ENGINE_ERROR_BLOCK".to_string(),
                     score: 0,
                     latency_ms,
+                    latency_us,
                 }),
             )
                 .into_response()
@@ -138,8 +146,10 @@ pub async fn health(State(state): State<AppState>) -> impl IntoResponse {
             pass_count: snapshot.pass_count,
             block_count: snapshot.block_count,
             block_rate: snapshot.block_rate,
-            latency_p50_ms: snapshot.latency_p50_ms,
-            latency_p95_ms: snapshot.latency_p95_ms,
+            latency_p50_ms: snapshot.latency_p50_us / 1_000,
+            latency_p95_ms: snapshot.latency_p95_us / 1_000,
+            latency_p50_us: snapshot.latency_p50_us,
+            latency_p95_us: snapshot.latency_p95_us,
             top_block_reasons: snapshot.top_block_reasons,
         }),
     )

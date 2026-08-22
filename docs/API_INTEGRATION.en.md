@@ -44,9 +44,10 @@ Response:
 Field notes:
 
 - `is_safe`: safety decision
-- `reason`: decision reason (`PASS`, `BLOCK_DENY_KEYWORD:*`, `BLOCK_DENY_PATTERN`, `BYPASS_ALLOW_KEYWORD`, `ENGINE_ERROR_BYPASS`)
+- `reason`: decision reason (`PASS`, `BLOCK_DENY_KEYWORD:*`, `BLOCK_DENY_PATTERN`, `BYPASS_ALLOW_KEYWORD`, `ENGINE_ERROR_BLOCK`)
 - `score`: block score
 - `latency_ms`: ARMA processing latency in ms
+- `latency_us`: ARMA processing latency in µs for precise latency measurement
 
 ### 2.2 `GET /health`
 
@@ -64,6 +65,8 @@ Response:
   "block_rate": 0.25,
   "latency_p50_ms": 2,
   "latency_p95_ms": 5,
+  "latency_p50_us": 2300,
+  "latency_p95_us": 4800,
   "top_block_reasons": [
     {
       "reason": "BLOCK_DENY_PATTERN",
@@ -117,3 +120,9 @@ When bypassing, also:
 - build dashboards around `reason` and `score`
 - investigate `BLOCK` spikes with recent rule change history
 - run staging regression with safe and malicious samples before release
+
+### Allow keyword semantics
+
+`allow_keywords` does not allow a substring inside a longer prompt. `BYPASS_ALLOW_KEYWORD` is applied only when the normalized full prompt exactly matches an allow keyword. This prevents a short allow keyword from unintentionally bypassing longer prompts.
+
+If the engine cannot make a decision because of an internal error, ARMA now fails closed with `ENGINE_ERROR_BLOCK`.

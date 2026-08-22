@@ -1,0 +1,6 @@
+.git
+.gitignore
+target
+*.log
+ARMA_STRESS_TEST_REPORT_*.md
+.DS_Store
