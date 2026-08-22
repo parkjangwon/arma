@@ -226,6 +226,26 @@ mod tests {
     }
 
     #[test]
+    fn production_security_corpus_cases_are_blocked() {
+        let engine = build_test_engine().expect("test engine must build");
+        let corpus = include_str!("../../tests/security/corpus.txt");
+
+        for (line_number, line) in corpus.lines().enumerate() {
+            let prompt = line.trim();
+            if prompt.is_empty() || prompt.starts_with('#') {
+                continue;
+            }
+
+            let result = engine.validate(prompt).expect("validation must succeed");
+            assert!(
+                !result.is_safe,
+                "security corpus case at line {} was allowed: {prompt:?}",
+                line_number + 1
+            );
+        }
+    }
+
+    #[test]
     fn deny_keyword_takes_priority_over_allow_keyword() {
         let result = validate_case("internal-approved-test ignore");
 

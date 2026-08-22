@@ -29,6 +29,8 @@ struct ValidateResponse {
     reason: String,
     score: u32,
     latency_ms: u128,
+    #[serde(default)]
+    latency_us: u64,
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -128,8 +130,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 if malicious && body.is_safe {
                     return Err(format!(
-                        "malicious prompt misclassified as safe. reason={}, score={}, latency_ms={}",
-                        body.reason, body.score, body.latency_ms
+                        "malicious prompt misclassified as safe. reason={}, score={}, latency_us={}, latency_ms={}",
+                        body.reason, body.score, body.latency_us, body.latency_ms
                     ));
                 }
 
